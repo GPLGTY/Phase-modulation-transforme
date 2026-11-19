@@ -13,7 +13,6 @@ pipeline/
 ├── format_json_dataset_for_training_llm.py / *_en.py
 ├── format_json_dataset_for_eval_from_jsonl.py / *_v2.py
 ├── add_abstract.py / build_vectorstore.sh / test_code.py / config.py
-├── MultiProcessingLLM/          # 可选工具（解析生成等）
 └── models/
     ├── infgrad/stella-base-en-v2/
     ├── infgrad/stella-base-zh-v2/
@@ -22,7 +21,7 @@ pipeline/
 
 中间产物写入同级 `../pipeline_data/`（默认不入库）。检索流水线说明见 [../DATA_PIPELINE_CN.md](../DATA_PIPELINE_CN.md)。  
 
-对外可见的样本**仅**来自 `generate_question_with_knowledges.py`（带或不带检索知识）。不要将离线 Intent / `messages` 中间结果作为发布数据。  
+对外可见的样本**仅**来自 `generate_question_with_knowledges.py`（带或不带检索知识）。
 
 **默认实验协议**见根目录 README 对照协议与一键基准：`bash scripts/run_protocol_benchmark.sh`。
 

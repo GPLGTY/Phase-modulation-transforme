@@ -25,13 +25,7 @@ PACKS="03b 03d" bash scripts/download_modelscope_assets.sh     # 指令微调语
 | `sft_mini_512_zh.jsonl` | 中文指令微调（可选） | — | `03d` |
 | `pipeline/models/` | Stella Embedding | — | `05` |
 
-主要字段：`id`、`question` / `question_with_options`、`options`、`answer_idx`、`retrieve_info`（检索增强时）等。不含离线 Intent / `messages` 中间结果。
-
-若本地仍有历史 `*_intent.json`，可执行：
-
-```bash
-python scripts/strip_to_retrieval_json.py
-```
+主要字段：`id`、`question` / `question_with_options`、`options`、`answer_idx`、`retrieve_info`（检索增强时）等。
 
 公开语料备份：https://www.modelscope.cn/datasets/longview/QubitFormerDataset
 

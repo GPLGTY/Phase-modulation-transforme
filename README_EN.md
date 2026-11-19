@@ -13,15 +13,15 @@ Three contrastive evaluation protocols are provided (each predicts an option let
 
 | Protocol | Description | Entry |
 |----------|-------------|-------|
-| `no_qf` | No QubitFormer; standalone upstream option prediction | `--protocol no_qf` |
-| `qf_norag` | QubitFormer + non-retrieval cascade branch | `--protocol qf_norag` |
-| `qf_rag` | QubitFormer + retrieval-augmented cascade branch | `--protocol qf_rag` |
+| `no_qf` | Upstream only (no QubitFormer) | `--protocol no_qf` |
+| `qf_norag` | Non-retrieval upstream → QubitFormer | `--protocol qf_norag` |
+| `qf_rag` | Retrieval-augmented upstream → QubitFormer | `--protocol qf_rag` |
 
-Training and inference automatically resolve distinct QubitFormer checkpoints: training initializes from `parameters/sft_QF_en_1024.pth` and writes to `out/run_cascade_norag/` or `out/run_cascade_rag/`; inference loads the corresponding `*_best.pth`. Evaluation artifacts store only the final option letter—upstream intermediate text is never written to disk.
+Training and inference automatically resolve distinct QubitFormer checkpoints: training initializes from `parameters/sft_QF_en_1024.pth` and writes to `out/run_cascade_norag/` or `out/run_cascade_rag/`; inference loads the corresponding `*_best.pth`. Evaluation artifacts record the final option letter and accuracy-related fields.
 
 > The default training seed is `1337`; GPU nondeterminism may induce negligible numerical variation.
 >
-> Released MedQA samples follow the `generate_question_with_knowledges.py` schema only (no offline Intent / `messages` intermediates).
+> Released MedQA samples follow the `generate_question_with_knowledges.py` schema only.
 
 ## Environment and dependencies
 
@@ -56,7 +56,7 @@ Contrastive protocols load upstream modules sequentially by peak demand (all thr
 
 | Item | Recommendation |
 |------|----------------|
-| GPUs | ≥4×80 GB (e.g. A100 / A800 / H100); preferably **8×80 GB** (sized to the largest single upstream load) |
+| GPUs | **8×80 GB** (e.g. A100 / A800 / H100) |
 | Disk | ≥400 GB (all upstream weights plus packs `01`/`04`, etc.) |
 | Host RAM | ≥256 GB (weight load / sharding) |
 
@@ -67,11 +67,11 @@ Additional notes: default training `NPROC=1`; prefer multi-GPU `device_map=auto`
 The GitHub repository primarily contains source code; checkpoints, corpora, and embeddings are published on ModelScope.
 
 **ModelScope repository:** [`GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering`](https://www.modelscope.cn/models/GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
-Includes archive packs `01`–`05` and cascade directories `parameters/ckpt_a`, `parameters/ckpt_b`, `parameters/ckpt_c`. Details: [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md).
+Includes archive packs `01`–`05` and the three contrastive-protocol directories `parameters/ckpt_a`, `parameters/ckpt_b`, `parameters/ckpt_c`. Details: [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md).
 
-### Upstream generation checkpoints (required for the cascade protocol)
+### Upstream generation checkpoints (required for contrastive protocols)
 
-The cascade protocol uses `parameters/ckpt_a` and `parameters/ckpt_b`; standalone inference uses `parameters/ckpt_c`. From the project root:
+`qf_norag` uses `parameters/ckpt_a`, `qf_rag` uses `parameters/ckpt_b`, and `no_qf` uses `parameters/ckpt_c`. From the project root:
 
 ```bash
 pip install -U modelscope
@@ -163,7 +163,7 @@ Phase-modulation-transforme/
 | MedQA US validation | `dataset/RAG_MedQA_US_dev_1272.json` (1272) | `04` |
 | MedQA US test | `dataset/RAG_MedQA_US_test_1273.json` (1273) | `04` |
 
-Retrieval: `PACKS="04"`, or jointly with checkpoints via `PACKS="01 04"`. Samples follow the retrieval-pipeline schema (with or without `retrieve_info`); no offline Intent / `messages`. Public corpus mirror: https://www.modelscope.cn/datasets/longview/QubitFormerDataset
+Retrieval: `PACKS="04"`, or jointly with checkpoints via `PACKS="01 04"`. Samples follow the retrieval-pipeline schema (with or without `retrieve_info`). Public corpus mirror: https://www.modelscope.cn/datasets/longview/QubitFormerDataset
 
 To rebuild retrieval-augmented samples from raw MedQA, see **MedQA dataset**, **Dataset construction**, [dataset/DATA_PIPELINE_CN.md](dataset/DATA_PIPELINE_CN.md), and [dataset/pipeline/README.md](dataset/pipeline/README.md).
 
@@ -194,12 +194,6 @@ dataset/pipeline_data/
 Place `train.json` / `dev.json` under `dataset/pipeline_data/questions/MedMCQA/`; convert to MedQA-aligned jsonl fields with `convert_medmcqa_to_medqa_jsonl.py` before retrieval.
 
 Retrieval embeddings reside in `dataset/pipeline/models/` (`stella-base-en-v2` / `stella-base-zh-v2` / `stella-large-zh-v2`). Paths are set in `dataset/pipeline/config.py`; update `model_path` if relocated.
-
-Optional rationale generation (`MultiProcessingLLM/`) requires corresponding LLM service credentials, e.g.:
-
-```bash
-export KIMI_OPENAI_KEY='xxxx'
-```
 
 ### Dataset construction (from raw corpora)
 
@@ -406,7 +400,7 @@ PROTOCOL=all OUT_CSV=results/protocol_eval.csv \
   bash scripts/run_cascade_infer.sh
 ```
 
-Result CSVs contain only final prediction fields (`extracted_choice`, `matches_answer_idx`, …). Upstream intermediate text is never written to evaluation artifacts.
+Result CSVs contain prediction fields such as `extracted_choice` and `matches_answer_idx`.
 
 ### Checkpoint metadata scrubbing and upload (maintenance)
 
@@ -439,4 +433,34 @@ Eval only (checkpoints already present):
 ```bash
 SKIP_TRAIN=1 bash scripts/run_protocol_benchmark.sh
 ```
+
+Custom test sets (`name=path`, comma-separated):
+
+```bash
+DATASETS="medqa_us_test=dataset/RAG_MedQA_US_test_1273.json" \
+  bash scripts/run_protocol_benchmark.sh
+```
+
+#### Where results are and how to read them
+
+After evaluation, check the accuracy comparison table (each run also writes a timestamped directory and syncs `latest/`):
+
+| Path | Contents |
+|------|----------|
+| `results/protocol_benchmark/latest/comparison.csv` | Quick entry: dataset × protocol accuracy (open in Excel / any editor) |
+| `results/protocol_benchmark/latest/comparison.md` | Same table as Markdown for reading in-repo |
+| `results/protocol_benchmark/<timestamp>/` | Full run artifacts: `comparison.csv` / `comparison.md` / `summary.json` |
+| `results/protocol_benchmark/<timestamp>/details/` | Per-sample predictions, e.g. `medqa_us_test__qf_rag.csv` |
+
+```bash
+# Summary table (recommended)
+cat results/protocol_benchmark/latest/comparison.md
+# or
+head -n 20 results/protocol_benchmark/latest/comparison.csv
+
+# Per-protocol detail CSVs
+ls results/protocol_benchmark/*/details/*.csv
+```
+
+In `comparison.*`, focus on `dataset`, `protocol`, `accuracy` (plus `n_match` / `n_scored`). Detail CSVs contain final option letters and scoring fields.
 

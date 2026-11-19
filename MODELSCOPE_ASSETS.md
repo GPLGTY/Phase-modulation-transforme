@@ -41,7 +41,7 @@ PACKS="01 04" bash scripts/download_modelscope_assets.sh
 PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 ```
 
-脚本将下载指定 `.tar` 并解压至约定路径。若远程仍为旧包名 `04_medqa_intent_json.tar`，下载脚本会回退拉取并自动执行 `scripts/strip_to_retrieval_json.py`，将样本规范为检索流水线字段（去除 `messages` 等中间字段，并重命名为无 `_intent` 的文件名）。
+脚本将下载指定 `.tar` 并解压至约定路径。
 
 ## 远程归档包一览
 
@@ -57,7 +57,7 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 | `08_questions.tar` | ~0.2G | `dataset/pipeline_data/questions/` | MedQA US/Mainland 与 MedMCQA 原始题目 |
 | `SHA256SUMS.txt` / `MANIFEST.md` | 小 | — | 校验与清单 |
 
-> 对外实验协议不包含预训练语料包与 Intent SFT 相关归档。样本 JSON **仅**保留检索脚本产物字段（如 `question_with_options`、`answer_idx`、`retrieve_info`），不含离线 Intent / `messages` 中间结果。教材与向量库按语言匹配索引发布（英文 `en/stella-base-en-v2`）。自原始题库重建检索需同时具备 `05`–`08`。
+> 对外实验协议不包含预训练语料包。样本 JSON **仅**保留检索脚本产物字段（如 `question_with_options`、`answer_idx`、`retrieve_info`）。教材与向量库按语言匹配索引发布（英文 `en/stella-base-en-v2`）。自原始题库重建检索需同时具备 `05`–`08`。
 
 ## 按实验场景选用
 
@@ -71,8 +71,6 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 
 1. 打开上述 ModelScope 页面，下载所需目录或 `.tar`
 2. 于**项目根目录**执行：`tar -xf /path/to/xxx.tar`
-3. 若解压得到 `*_intent.json`，执行：`python scripts/strip_to_retrieval_json.py`
-
 校验（可选）：
 
 ```bash

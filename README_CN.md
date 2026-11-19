@@ -13,15 +13,15 @@ GitHub: https://github.com/GPLGTY/Phase-modulation-transforme
 
 | 协议 | 含义 | 入口 |
 |------|------|------|
-| `no_qf` | 不经 QubitFormer，独立上游完成选项预测 | `--protocol no_qf` |
-| `qf_norag` | QubitFormer + 非检索增强分支 | `--protocol qf_norag` |
-| `qf_rag` | QubitFormer + 检索增强分支 | `--protocol qf_rag` |
+| `no_qf` | 仅上游模块完成选项预测（不经 QubitFormer） | `--protocol no_qf` |
+| `qf_norag` | 非检索增强上游 → QubitFormer | `--protocol qf_norag` |
+| `qf_rag` | 检索增强上游 → QubitFormer | `--protocol qf_rag` |
 
-训练与推理自动区分 QubitFormer 检查点：训练自 `parameters/sft_QF_en_1024.pth` 初始化并写入 `out/run_cascade_norag/` 或 `out/run_cascade_rag/`；推理默认加载对应目录下的 `*_best.pth`。评测产物仅保留最终选项字母，不落盘上游中间文本。
+训练与推理自动区分 QubitFormer 检查点：训练自 `parameters/sft_QF_en_1024.pth` 初始化并写入 `out/run_cascade_norag/` 或 `out/run_cascade_rag/`；推理默认加载对应目录下的 `*_best.pth`。评测产物记录最终选项字母与准确率相关字段。
 
 > 训练默认随机种子为 `1337`；受 GPU 非确定性算子影响，数值结果可能存在可忽略的波动。
 >
-> 对外样本仅为 `generate_question_with_knowledges.py` 口径的检索/非检索 JSON（无离线 Intent / `messages` 中间结果）。
+> 对外样本仅为 `generate_question_with_knowledges.py` 口径的检索/非检索 JSON。
 
 ## 环境与依赖
 
@@ -56,7 +56,7 @@ pip install lm-eval==0.4.9
 
 | 项目 | 建议 |
 |------|------|
-| GPU | ≥4×80 GB（如 A100 / A800 / H100）；更稳妥 **8×80 GB**（按单次加载的最大上游模块峰值） |
+| GPU | **8×80 GB**（如 A100 / A800 / H100） |
 | 磁盘 | ≥400 GB（含全部上游权重与归档包 `01`/`04` 等） |
 | 主机内存 | ≥256 GB（权重加载 / 分片） |
 
@@ -67,11 +67,11 @@ pip install lm-eval==0.4.9
 GitHub 仓库以源代码为主；模型权重、语料与 Embedding 统一发布于 ModelScope。
 
 **ModelScope 仓库**：[`GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering`](https://www.modelscope.cn/models/GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
-包含归档包 `01`/`04`/`05` 等，以及级联所需目录 `parameters/ckpt_a`、`parameters/ckpt_b`、`parameters/ckpt_c`。细节见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)。
+包含归档包 `01`/`04`/`05` 等，以及三条对照协议所需目录 `parameters/ckpt_a`、`parameters/ckpt_b`、`parameters/ckpt_c`。细节见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)。
 
-### 上游生成模块检查点（级联协议必需）
+### 上游生成模块检查点（对照协议必需）
 
-级联协议使用 `parameters/ckpt_a` 与 `parameters/ckpt_b`；独立推理协议使用 `parameters/ckpt_c`。于项目根目录执行：
+`qf_norag` 使用 `parameters/ckpt_a`，`qf_rag` 使用 `parameters/ckpt_b`，`no_qf` 使用 `parameters/ckpt_c`。于项目根目录执行：
 
 ```bash
 pip install -U modelscope
@@ -163,7 +163,7 @@ Phase-modulation-transforme/
 | MedQA US 验证集 | `dataset/RAG_MedQA_US_dev_1272.json`（1272） | `04` |
 | MedQA US 测试集 | `dataset/RAG_MedQA_US_test_1273.json`（1273） | `04` |
 
-获取方式：`PACKS="04"`，或与检查点一并 `PACKS="01 04"`。样本为检索流水线产物（可含或不含 `retrieve_info`）；不含离线 Intent / `messages`。公开语料备份：https://www.modelscope.cn/datasets/longview/QubitFormerDataset
+获取方式：`PACKS="04"`，或与检查点一并 `PACKS="01 04"`。样本为检索流水线产物（可含或不含 `retrieve_info`）。公开语料备份：https://www.modelscope.cn/datasets/longview/QubitFormerDataset
 
 若需自原始 MedQA 语料重建检索增强样本，参见下文「MedQA 数据集」「数据集构建」及 [dataset/DATA_PIPELINE_CN.md](dataset/DATA_PIPELINE_CN.md)、[dataset/pipeline/README.md](dataset/pipeline/README.md)。
 
@@ -194,12 +194,6 @@ dataset/pipeline_data/
 将 `train.json` / `dev.json` 置于 `dataset/pipeline_data/questions/MedMCQA/`；检索前以 `convert_medmcqa_to_medqa_jsonl.py` 转换为与 MedQA 一致的 jsonl 字段。
 
 检索用 Embedding 位于 `dataset/pipeline/models/`（`stella-base-en-v2` / `stella-base-zh-v2` / `stella-large-zh-v2`）。路径由 `dataset/pipeline/config.py` 指定；若迁移存放位置，请同步更新 `model_path`。
-
-可选解析生成（`MultiProcessingLLM/`）需配置相应 LLM 服务凭证，例如：
-
-```bash
-export KIMI_OPENAI_KEY='xxxx'
-```
 
 ### 数据集构建（自原始语料）
 
@@ -427,7 +421,7 @@ PROTOCOL=qf_norag bash scripts/run_cascade_infer.sh
 PROTOCOL=qf_rag bash scripts/run_cascade_infer.sh
 ```
 
-结果 CSV 仅含 `extracted_choice`、`matches_answer_idx` 等最终预测字段；标准输出给出各协议准确率摘要。上游中间文本不写入评测产物。
+结果 CSV 含 `extracted_choice`、`matches_answer_idx` 等预测字段；标准输出给出各协议准确率摘要。
 
 ### 检查点元数据清理与上传（维护用途）
 
@@ -467,4 +461,30 @@ SKIP_TRAIN=1 bash scripts/run_protocol_benchmark.sh
 DATASETS="medqa_us_test=dataset/RAG_MedQA_US_test_1273.json" \
   bash scripts/run_protocol_benchmark.sh
 ```
+
+#### 结果在哪里、怎么看
+
+评测结束后，主要看准确率对比表（每次运行还会写入带时间戳的目录，并同步到 `latest/`）：
+
+| 路径 | 内容 |
+|------|------|
+| `results/protocol_benchmark/latest/comparison.csv` | 快捷入口：数据集 × 协议 的准确率表（Excel / 文本编辑器均可打开） |
+| `results/protocol_benchmark/latest/comparison.md` | 同上，Markdown 透视表，便于直接阅读 |
+| `results/protocol_benchmark/<时间戳>/` | 该次完整产物：`comparison.csv` / `comparison.md` / `summary.json` |
+| `results/protocol_benchmark/<时间戳>/details/` | 逐条预测明细，如 `medqa_us_test__qf_rag.csv`（含预测字母与是否答对） |
+
+查看方式示例：
+
+```bash
+# 总表（推荐）
+cat results/protocol_benchmark/latest/comparison.md
+# 或
+head -n 20 results/protocol_benchmark/latest/comparison.csv
+
+# 某协议明细
+head -n 5 results/protocol_benchmark/latest/../  # 先 ls 时间戳目录，再打开 details/
+ls results/protocol_benchmark/*/details/*.csv
+```
+
+`comparison.*` 中关注列：`dataset`、`protocol`、`accuracy`（以及 `n_match` / `n_scored`）。明细 CSV 含最终选项字母等评测字段。
 

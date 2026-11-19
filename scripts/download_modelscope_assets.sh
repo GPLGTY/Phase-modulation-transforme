@@ -91,7 +91,6 @@ for key in $PACKS; do
   tar -xf "$src" -C "$ROOT"
 done
 
-# If a legacy *_intent.json pack was extracted, strip to retrieval schema + rename
 if [[ "$SKIP_EXTRACT" != "1" ]]; then
   python3 "$ROOT/scripts/strip_to_retrieval_json.py" --dataset_dir "$ROOT/dataset" || true
 fi

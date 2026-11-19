@@ -1,7 +1,7 @@
 # MedQA 数据构建流水线
 
 > **工作目录**：下文命令均在 `dataset/pipeline/` 下执行（脚本与 Embedding 检查点位于该目录）。  
-> **对外样本**：仅发布 / 使用 `generate_question_with_knowledges.py` 产物（带或不带检索知识）；不发布离线 Intent / `messages` 中间结果。
+> **对外样本**：仅发布 / 使用 `generate_question_with_knowledges.py` 产物（带或不带检索知识）。
 
 ---
 
@@ -121,7 +121,7 @@ python generate_question_with_knowledges.py \
 
 `dataset/RAG_MedQA_US_train_10178.json`
 
-字段应与 `generate_question_with_knowledges.py` 一致；**不要**再经离线 Intent 脚本写入 `messages`。
+字段应与 `generate_question_with_knowledges.py` 一致。
 
 ### 2.4 进入训练与推理
 
