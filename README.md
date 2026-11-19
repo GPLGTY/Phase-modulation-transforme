@@ -7,135 +7,174 @@ English: [README_EN.md](README_EN.md)
 
 GitHub: https://github.com/GPLGTY/Phase-modulation-transforme
 
-本仓库提供相位调制检索增强 Transformer 在 MedQA 医学问答上的完整训练与评测流程：代码、数据处理脚本、测试参考结果；**大体积权重 / 语料 / Embedding 请从 ModelScope 下载**（见下文）。
+本仓库发布相位调制检索增强 Transformer（Phase-Modulation Retrieval-Augmented Transformer）于 MedQA 医学选择题问答任务上的完整实验协议，包括实现代码、数据构建脚本与参考评测结果。所附 QubitFormer 检查点业已经过预训练；使用者基于该初始化权重开展指令微调（SFT）与评测，无需自行预训练。体量较大的模型检查点、语料与 Embedding 资源托管于 ModelScope（见下文及 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)）。
 
-> 训练使用固定随机种子 `1337`，仍可能因 GPU 非确定性出现极小数值差；完整配方跑通后，测试准确率应落在参考结果附近。
+本仓库提供三条对照评测协议（均输出选项字母并与标准答案比对、报告准确率）：
 
-## 项目环境依赖
+| 协议 | 含义 | 入口 |
+|------|------|------|
+| `no_qf` | 不经 QubitFormer，独立上游完成选项预测 | `--protocol no_qf` |
+| `qf_norag` | QubitFormer + 非检索增强分支 | `--protocol qf_norag` |
+| `qf_rag` | QubitFormer + 检索增强分支 | `--protocol qf_rag` |
+
+训练与推理自动区分 QubitFormer 检查点：训练自 `parameters/sft_QF_en_1024.pth` 初始化并写入 `out/run_cascade_norag/` 或 `out/run_cascade_rag/`；推理默认加载对应目录下的 `*_best.pth`。评测产物仅保留最终选项字母，不落盘上游中间文本。
+
+> 训练默认随机种子为 `1337`；受 GPU 非确定性算子影响，数值结果可能存在可忽略的波动。
+>
+> 对外样本仅为 `generate_question_with_knowledges.py` 口径的检索/非检索 JSON（无离线 Intent / `messages` 中间结果）。
+
+## 环境与依赖
 
 ```bash
 cd Phase-modulation-transforme
 pip install -r requirements.txt
 ```
 
-请安装与本机 CUDA 匹配的 PyTorch。昇腾环境再安装 `torch_npu`（见 `requirements.txt` 注释）。
+请安装与本机 CUDA 驱动匹配的 PyTorch。华为昇腾平台需额外安装 `torch_npu`（见 `requirements.txt` 注释）。
 
-可选下游评测：
+可选下游基准评测：
 
 ```bash
 pip install lm-eval==0.4.9
 ```
 
-### 软件包版本依赖
+### 主要依赖
 
-完整依赖见 [requirements.txt](./requirements.txt)。核心：
+完整列表见 [requirements.txt](./requirements.txt)。核心组件：
 
 | 软件包 | 说明 |
 |--------|------|
 | python | 3.8+ |
-| torch | ≥2.0，需匹配本机 CUDA |
+| torch | ≥2.0，需与本机 CUDA 匹配 |
 | transformers | ≥4.37 |
-| datasets / wandb / tqdm | 训练与日志 |
-| modelscope | 可选，用于下载大文件包 |
+| datasets / wandb / tqdm | 数据加载、实验记录与进度显示 |
+| modelscope | 可选；用于获取 ModelScope 托管资源 |
 
-## 从 ModelScope 下载权重与数据
+### 计算资源要求
 
-本仓库（GitHub）主要放代码；**权重、语料、Embedding 已全部放在 ModelScope**，克隆代码后按需下载即可。
+对照协议按峰值顺序加载上游模块（不必三套权重同时驻留）。建议配置（bfloat16；实际上限随上下文长度、`max_new_tokens` 与后端实现而变）：
 
-**ModelScope**：[`GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering`](https://www.modelscope.cn/models/GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
-（已含 `01`–`05` 全部 `.tar` 及 `SHA256SUMS.txt` / `MANIFEST.md`。更细说明见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)。）
+| 项目 | 建议 |
+|------|------|
+| GPU | ≥4×80 GB（如 A100 / A800 / H100）；更稳妥 **8×80 GB**（按单次加载的最大上游模块峰值） |
+| 磁盘 | ≥400 GB（含全部上游权重与归档包 `01`/`04` 等） |
+| 主机内存 | ≥256 GB（权重加载 / 分片） |
 
-### 一键下载并解压
+补充约定：训练默认 `NPROC=1`；多卡优先用于 `device_map=auto` 或 vLLM 张量并行（`SIDECAR_TP*`）。需 NVIDIA GPU 与匹配的 CUDA / PyTorch；昇腾需 `torch_npu`（见 `requirements.txt`）。
 
-在**项目根目录**执行（自动解压到 `parameters/`、`out/`、`dataset/` 等正确路径）：
+## ModelScope 资源获取
+
+GitHub 仓库以源代码为主；模型权重、语料与 Embedding 统一发布于 ModelScope。
+
+**ModelScope 仓库**：[`GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering`](https://www.modelscope.cn/models/GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
+包含归档包 `01`/`04`/`05` 等，以及级联所需目录 `parameters/ckpt_a`、`parameters/ckpt_b`、`parameters/ckpt_c`。细节见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)。
+
+### 上游生成模块检查点（级联协议必需）
+
+级联协议使用 `parameters/ckpt_a` 与 `parameters/ckpt_b`；独立推理协议使用 `parameters/ckpt_c`。于项目根目录执行：
 
 ```bash
-pip install -U modelscope   # 首次需要
+pip install -U modelscope
+REPO=GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
 
-# 全量（约 17G）
-bash scripts/download_modelscope_assets.sh
+python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_a/**'])"
+python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_b/**'])"
+python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_c/**'])"
+```
 
-# 仅 Intent 测试评测（约 1.7G）：Intent 权重 + MedQA Intent JSON
-PACKS="02 04" bash scripts/download_modelscope_assets.sh
+亦可在 ModelScope 页面按目录手动获取。分支路由见 `model/sidecar_map.json`（由 `--protocol` 选择加载）。
 
-# Intent SFT：阶段一英文 SFT 权重 + Intent 数据
+另需预训练后的 QubitFormer 初始化权重（归档包 `01` 中的 `parameters/sft_QF_en_1024.pth`），以及含 `question_with_options`、`answer_idx` 的样本 JSON（可含检索相关字段）。
+
+### 归档包（`.tar`）批量获取
+
+于**项目根目录**执行（解压至 `parameters/`、`out/`、`dataset/` 等约定路径）：
+
+```bash
+pip install -U modelscope
+
+# QubitFormer 初始化权重 + MedQA 检索样本
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
-# 还需本地重跑检索流水线时加上 Embedding
-PACKS="01 04 05" bash scripts/download_modelscope_assets.sh
+# 检索重建：Embedding + 教材 + FAISS + 原始题目（含英文）
+PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 ```
 
-也可在 ModelScope 网页手动下载 `.tar`，于项目根目录执行 `tar -xf <包名>.tar`。
+亦可自 ModelScope 页面下载 `.tar` 后，在项目根目录执行 `tar -xf <包名>.tar`。
 
-### 包内容与放置位置
+### 资源清单与本地路径
 
-| ModelScope 文件 | 解压后位置 | 用途 |
-|-----------------|------------|------|
-| `01_parameters.tar` | `parameters/QF_*`、`parameters/MiniMind_*`、`parameters/sft_QF_en_1024.pth` | HF 权重 + 阶段一英文 SFT |
-| `02_intent_sft_checkpoints.tar` | `out/run_sft_intent/sft_intent_QF_en_1024_best.pth`（及 last） | Intent SFT；**评测用 best** |
-| `03a_corpus_SlimPajama-1B_full.tar` | `dataset/SlimPajama-1B_full.jsonl` | 英文预训练语料 |
-| `03b_corpus_openhermes2_5.tar` | `dataset/openhermes2_5.jsonl` | 英文通用 SFT 语料 |
-| `03c_corpus_pretrain_hq_zh.tar` | `dataset/pretrain_hq_zh.jsonl` | 中文预训练（可选） |
-| `03d_corpus_sft_mini_512_zh.tar` | `dataset/sft_mini_512_zh.jsonl` | 中文 SFT（可选） |
-| `04_medqa_intent_json.tar` | `dataset/RAG_MedQA_US_{train,dev,test}_*_intent.json` | Intent 训练/验证/测试 |
-| `05_embedding_stella.tar` | `dataset/pipeline/models/` | 检索用 Stella Embedding |
+| ModelScope 文件 / 目录 | 本地路径 | 用途 |
+|------------------------|----------|------|
+| `parameters/ckpt_a` | `parameters/ckpt_a/` | 级联上游模块 slot 0 |
+| `parameters/ckpt_b` | `parameters/ckpt_b/` | 级联上游模块 slot 1 |
+| `parameters/ckpt_c` | `parameters/ckpt_c/` | `no_qf` 协议上游模块 |
+| `01_parameters.tar` | `parameters/QF_*`、`parameters/MiniMind_*`、`parameters/sft_QF_en_1024.pth` | 预训练后的 QubitFormer（Hugging Face 与 SFT 初始化检查点） |
+| `03b_corpus_openhermes2_5.tar` | `dataset/openhermes2_5.jsonl` | 英文通用指令微调语料 |
+| `03d_corpus_sft_mini_512_zh.tar` | `dataset/sft_mini_512_zh.jsonl` | 中文指令微调语料（可选） |
+| `04_medqa_rag_json.tar` | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA 检索样本（`generate_question_with_knowledges.py` 口径） |
+| `05_embedding_stella.tar` | `dataset/pipeline/models/` | 检索用 Stella Embedding（en/zh） |
+| `06_textbooks.tar` | `dataset/pipeline_data/textbooks/` | MedQA 教材（en / zh_paragraph / zh_sentence 及对应 json） |
+| `07_vector_stores.tar` | `dataset/pipeline_data/vector_stores/` | 语言匹配 FAISS 索引（en / zh_paragraph / zh_sentence） |
+| `08_questions.tar` | `dataset/pipeline_data/questions/` | MedQA US/Mainland 与 MedMCQA 原始题目 |
 
-### 下载后怎么用
+### 获取后的基本用法
 
 ```bash
-# 1) 评测（需先 PACKS="02 04"）
-CHECKPOINT=out/run_sft_intent/sft_intent_QF_en_1024_best.pth \
-  bash scripts/eval_medqa_test.sh
-
-# 2) Intent SFT（需先 PACKS="01 04"）
-bash scripts/run_stage2_intent_sft.sh
+# 一键对照基准（训练缺失检查点 + 多测试集 × 三协议 → comparison.csv）
+bash scripts/run_protocol_benchmark.sh
 ```
 
-## 目录结构
+## 仓库结构
 
 ```
 Phase-modulation-transforme/
-├── model/              # 模型与分词器
-├── trainer/            # 预训练 / 通用 SFT / MedQA Intent SFT
-├── tools/              # 权重转换、长度外推
-├── scripts/            # Intent SFT、测试评测
+├── model/                 # QubitFormer 与上游模块路由 / 提示配置
+├── trainer/               # 通用 SFT、级联训练
+├── inference_cascade_qf.py
+├── tools/                 # 权重格式转换与长度外推
+├── scripts/               # 级联启动、基线评测、ModelScope 资源脚本
 ├── dataset/
-│   ├── pipeline/       # MedQA 数据生成脚本 + Embedding 权重
-│   ├── pipeline_data/  # 生成时的中间数据（运行后出现，可不入库）
-│   └── *.json(l)       # 预训练/SFT 语料与 MedQA Intent 成品
-├── parameters/         # HF 权重与通用 SFT 检查点
-├── out/run_sft_intent/ # Intent SFT 检查点
+│   ├── pipeline/          # MedQA 检索构建流水线与 Embedding
+│   ├── pipeline_data/     # 教材 / FAISS（PACKS 06+07）与运行时检索产物
+│   └── *.json(l)          # SFT 语料与评测样本
+├── parameters/
+│   ├── ckpt_a/            # 级联上游模块 slot 0
+│   ├── ckpt_b/            # 级联上游模块 slot 1
+│   ├── ckpt_c/            # no_qf 协议上游模块
+│   └── sft_QF_en_1024.pth # 预训练后的 QubitFormer（训练初始化）
+├── out/run_cascade_norag/ # qf_norag 训练检查点
+├── out/run_cascade_rag/   # qf_rag 训练检查点
 ├── results/
-│   └── medqa_intent_test1273_reference/   # 测试参考结果
+│   └── protocol_benchmark/               # 对照准确率对比表
 ├── requirements.txt
 └── LICENSE
 ```
 
 ## 数据
 
-### 数据文件（`PACKS` 含对应包并解压后即有）
+### 语料与样本清单（对应 `PACKS` 解压后）
 
 | 阶段 | 路径 | 包 |
 |------|------|-----|
-| 英文预训练 | `dataset/SlimPajama-1B_full.jsonl` | `03a` |
-| 英文通用 SFT | `dataset/openhermes2_5.jsonl` | `03b` |
-| 中文预训练（可选） | `dataset/pretrain_hq_zh.jsonl` | `03c` |
-| 中文 SFT（可选） | `dataset/sft_mini_512_zh.jsonl` | `03d` |
-| MedQA Intent 训练 | `dataset/RAG_MedQA_US_train_10178_intent.json`（10178） | `04` |
-| MedQA Intent 验证 | `dataset/RAG_MedQA_US_dev_1272_intent.json`（1272） | `04` |
-| MedQA Intent 测试 | `dataset/RAG_MedQA_US_test_1273_intent.json`（1273） | `04` |
+| 英文通用指令微调 | `dataset/openhermes2_5.jsonl` | `03b` |
+| 中文指令微调（可选） | `dataset/sft_mini_512_zh.jsonl` | `03d` |
+| MedQA US 训练集 | `dataset/RAG_MedQA_US_train_10178.json`（10178） | `04` |
+| MedQA US 验证集 | `dataset/RAG_MedQA_US_dev_1272.json`（1272） | `04` |
+| MedQA US 测试集 | `dataset/RAG_MedQA_US_test_1273.json`（1273） | `04` |
 
-下载：`PACKS="04"` 或与权重一起 `PACKS="02 04"` / `PACKS="01 04"`。公开语料另有备份：https://www.modelscope.cn/datasets/longview/QubitFormerDataset  
+获取方式：`PACKS="04"`，或与检查点一并 `PACKS="01 04"`。样本为检索流水线产物（可含或不含 `retrieve_info`）；不含离线 Intent / `messages`。公开语料备份：https://www.modelscope.cn/datasets/longview/QubitFormerDataset
 
-若要从原始 MedQA **重新生成** Intent 数据，见下面「MedQA 数据集」与「数据集预处理」；说明见 [dataset/DATA_PIPELINE_CN.md](dataset/DATA_PIPELINE_CN.md)、[dataset/pipeline/README.md](dataset/pipeline/README.md)。
+若需自原始 MedQA 语料重建检索增强样本，参见下文「MedQA 数据集」「数据集构建」及 [dataset/DATA_PIPELINE_CN.md](dataset/DATA_PIPELINE_CN.md)、[dataset/pipeline/README.md](dataset/pipeline/README.md)。
 
-### MedQA 数据集（下载）
+### MedQA 数据集
 
-- 数据集来源：https://github.com/jind11/MedQA  
-- 下载链接：https://drive.google.com/file/d/1ImYUSLk9JbgHXOemfvyiDiirluZHPeQw/view?usp=sharing  
-- 中文介绍：https://zhuanlan.zhihu.com/p/679590312  
+- 推荐（ModelScope）：`PACKS="06 08"` 解压至 `dataset/pipeline_data/textbooks/` 与 `questions/`  
+- 原始发布：https://github.com/jind11/MedQA  
+- 数据下载：https://drive.google.com/file/d/1ImYUSLk9JbgHXOemfvyiDiirluZHPeQw/view?usp=sharing  
+- 中文简介：https://zhuanlan.zhihu.com/p/679590312  
 
-下载并解压后，将教材与题目整理到：
+目录约定：
 
 ```
 dataset/pipeline_data/
@@ -143,31 +182,31 @@ dataset/pipeline_data/
 └── questions/     # US|Mainland 下的 train.jsonl / dev.jsonl / test.jsonl
 ```
 
-### MedMCQA 数据集（下载）
+### MedMCQA 数据集
 
-- 官网：https://medmcqa.github.io/  
-- 数据集来源：https://github.com/medmcqa/medmcqa  
-- 下载链接：https://drive.google.com/uc?export=download&id=15VkJdq5eyWIkfb_aoD3oS8i4tScbHYky  
+- 推荐（ModelScope）：`PACKS="08"` 含 `questions/MedMCQA/{train,dev,test}.json`  
+- 项目主页：https://medmcqa.github.io/  
+- 原始发布：https://github.com/medmcqa/medmcqa  
+- 数据下载：https://drive.google.com/uc?export=download&id=15VkJdq5eyWIkfb_aoD3oS8i4tScbHYky  
 - Hugging Face：https://huggingface.co/datasets/openlifescienceai/medmcqa  
 - 论文：https://arxiv.org/abs/2203.14371  
 
-下载并解压后，将 `train.json` / `dev.json` 放到 `dataset/pipeline_data/questions/MedMCQA/`；第 3 步先用 `convert_medmcqa_to_medqa_jsonl.py` 转为 MedQA 格式 jsonl，再检索。
+将 `train.json` / `dev.json` 置于 `dataset/pipeline_data/questions/MedMCQA/`；检索前以 `convert_medmcqa_to_medqa_jsonl.py` 转换为与 MedQA 一致的 jsonl 字段。
 
-检索用 Embedding 已放在 `dataset/pipeline/models/`（`stella-base-en-v2` / `stella-base-zh-v2` / `stella-large-zh-v2`）。`dataset/pipeline/config.py` 已指向这些路径；若你改了存放位置，请同步改 `model_path`。
+检索用 Embedding 位于 `dataset/pipeline/models/`（`stella-base-en-v2` / `stella-base-zh-v2` / `stella-large-zh-v2`）。路径由 `dataset/pipeline/config.py` 指定；若迁移存放位置，请同步更新 `model_path`。
 
-生成解析（可选）时需配置 LLM API 环境变量，例如：
+可选解析生成（`MultiProcessingLLM/`）需配置相应 LLM 服务凭证，例如：
 
 ```bash
 export KIMI_OPENAI_KEY='xxxx'
-# 以及你实际调用的其它服务 KEY
 ```
 
-### 数据集预处理（从零生成）
+### 数据集构建（自原始语料）
 
-以下命令均在 `dataset/pipeline/` 下执行。单卡时将 `--device_ids="0"` 且 `--num_process=1`。  
-第 3–4 步统一使用 `--query_key_name="question_with_options"`（题干+选项）；勿先跑 `question` 再跑 `question_with_options` 到同一输出路径，以免覆盖。
+下列命令均在 `dataset/pipeline/` 下执行。单卡设置 `--device_ids="0"` 且 `--num_process=1`。  
+检索查询键统一为 `--query_key_name="question_with_options"`（题干与选项拼接）；请勿将不同查询键的结果写入同一输出路径以免覆盖。
 
-#### 1. 将 txt 教材转换为 json
+#### 1. 教材文本分块为 JSON
 
 ```bash
 cd dataset/pipeline
@@ -177,7 +216,7 @@ python -u txt2json.py --input_txt_dir '../pipeline_data/textbooks/zh_sentence' -
 python -u txt2json.py --input_txt_dir '../pipeline_data/textbooks/en' --output_json_dir '../pipeline_data/textbooks/en_json' --max_knowledge_len 1800 --language_type english --min_knowledge_len 5 --do_chunk
 ```
 
-#### 2. 读取 json 完成向量化
+#### 2. 构建向量索引
 
 ```bash
 cd dataset/pipeline
@@ -187,18 +226,18 @@ python -u vector_store.py --input_json_dir '../pipeline_data/textbooks/zh_paragr
 python -u vector_store.py --input_json_dir '../pipeline_data/textbooks/en_json' --store_top_path '../pipeline_data/vector_stores/en'
 ```
 
-#### 3. 对 train / dev / test 做检索，构建带知识的指令素材
+#### 3. 对 train / dev / test 执行检索增强
 
-统一使用 `--query_key_name="question_with_options"`（与第 4 步对齐）。产物路径为：
+查询键统一为 `--query_key_name="question_with_options"`。输出路径：
 
 `{output_json_dir}/retrive_use_question_with_options/{embedding_model_name}/{output_json_file}`
 
-单卡时：`--device_ids="0"` 且 `--num_process=1`。输入须为 **jsonl**（每行一个 JSON）。
+单卡：`--device_ids="0"` 且 `--num_process=1`。输入须为 **jsonl**（每行一条样本）。
 
 ```bash
 cd dataset/pipeline
 
-# ---------- MedQA 英文 US（Intent 主路线）----------
+# ---------- MedQA 英文 US（默认评测子集）----------
 python generate_question_with_knowledges.py \
     --num_process=8 --index_key_name="id" --topk_knowledge=10 --knowledge_threshold=0.65 \
     --input_jsonl_path="../pipeline_data/questions/US/train.jsonl" \
@@ -254,9 +293,9 @@ python generate_question_with_knowledges.py \
     --output_json_file="test.json" --device_ids="0,1,2,3,4,5,6,7" \
     --query_key_name="question_with_options"
 
-# ---------- MedMCQA：先格式转换，再检索（训练 / 验证）----------
-# 原始 MedMCQA 为 opa/opb/opc/opd + cop，需先转为与 MedQA 相同的 jsonl 字段
-# 将下载的 train.json / dev.json 放到 ../pipeline_data/questions/MedMCQA/
+# ---------- MedMCQA：格式对齐后检索（训练 / 验证）----------
+# 原始字段为 opa/opb/opc/opd + cop；须先转换为与 MedQA 一致的 jsonl schema
+# 将 train.json / dev.json 置于 ../pipeline_data/questions/MedMCQA/
 python convert_medmcqa_to_medqa_jsonl.py \
   --in_jsonl ../pipeline_data/questions/MedMCQA/train.json \
   --out_jsonl ../pipeline_data/questions/MedMCQA/train.jsonl
@@ -284,153 +323,11 @@ python generate_question_with_knowledges.py \
     --query_key_name="question_with_options"
 ```
 
-#### 4. 检索结果 → Intent 训练数据
+完成检索增强后，进入下文「在线级联训练与推理」。亦可直接使用 ModelScope 归档包 `04` 中的样本 JSON。详见 [dataset/DATA_PIPELINE_CN.md](dataset/DATA_PIPELINE_CN.md)。
 
-须先完成第 3 步。用 `dataset/pipeline/generate_intent_from_retrieval.py`，将检索 JSON（含 `question_with_options`、`retrieve_info` 等）经 **OpenAI 兼容 API** 改写为 Intent 样本。支持断点续跑（`*.partial.json`）。
+### 检查点路径（ModelScope 解压后）
 
-**密钥**：请勿写入仓库。任选其一：
-
-```bash
-export VOLCENGINE_ARK_API_KEY='你的密钥'   # 或 ARK_API_KEY
-# 也可在命令行传 --api_key '你的密钥'
-```
-
-默认 `base_url` 为火山方舟。也可用本地 **vLLM**（OpenAI 兼容 `/v1`）部署 Distill 等模型生成数据，见下节。
-
-`--in_json` 必须指向第 3 步 `question_with_options` 产物。可选：加 `--with_rag`，把检索知识写入 LLM 提示。
-
-##### 本地部署 DeepSeek Distill（vLLM）并生成 Intent
-
-适用于 `DeepSeek-R1-Distill-Qwen-32B`、`DeepSeek-R1-Distill-Llama-70B` 等。权重可从 Hugging Face 或 ModelScope 下载，例如：
-
-| 模型 | Hugging Face | ModelScope（示例） |
-|------|----------------|-------------------|
-| Distill-Qwen-32B | `deepseek-ai/DeepSeek-R1-Distill-Qwen-32B` | `deepseek-ai/DeepSeek-R1-Distill-Qwen-32B` |
-| Distill-Llama-70B | `deepseek-ai/DeepSeek-R1-Distill-Llama-70B` | `deepseek-ai/DeepSeek-R1-Distill-Llama-70B` |
-
-**显存参考**（bf16 / 未量化，视实现与并行方式浮动）：Qwen-32B 约需 **1–2×80GB**；Llama-70B 约需 **2–4×80GB**（可用 `--tensor-parallel-size`）。显存不足时可换 AWQ/GPTQ 等量化权重，并相应改启动参数。
-
-**1）启动 vLLM（OpenAI 兼容服务）**
-
-```bash
-# 示例：32B，单机多卡按需改 --tensor-parallel-size
-pip install -U vllm
-
-python -m vllm.entrypoints.openai.api_server \
-  --model deepseek-ai/DeepSeek-R1-Distill-Qwen-32B \
-  --host 0.0.0.0 --port 8000 \
-  --dtype bfloat16 \
-  --tensor-parallel-size 2 \
-  --max-model-len 8192
-
-# 70B 示例（更多卡）
-# python -m vllm.entrypoints.openai.api_server \
-#   --model deepseek-ai/DeepSeek-R1-Distill-Llama-70B \
-#   --host 0.0.0.0 --port 8000 \
-#   --dtype bfloat16 \
-#   --tensor-parallel-size 4 \
-#   --max-model-len 8192
-```
-
-服务就绪后，`base_url` 一般为 `http://127.0.0.1:8000/v1`；`--api_key` 填任意非空占位（如 `EMPTY`）。`--model` 须与 vLLM 的 `--model` 名称（或你在服务端注册的 served-model-name）一致。
-
-**2）用本地模型跑 Intent 生成（MedQA US 示例）**
-
-```bash
-cd dataset/pipeline
-
-# 训练集（32B；70B 时把 --model 换成 DeepSeek-R1-Distill-Llama-70B）
-python generate_intent_from_retrieval.py \
-  --in_json ../pipeline_data/questions_with_knowledge/US/train/retrive_use_question_with_options/stella-base-en-v2/train.json \
-  --out_json ../RAG_MedQA_US_train_intent.json \
-  --base_url http://127.0.0.1:8000/v1 \
-  --api_key EMPTY \
-  --model deepseek-ai/DeepSeek-R1-Distill-Qwen-32B \
-  --workers 4 --temperature 0.7 --max_tokens 4096
-
-# 验证集 / 测试集：仅改 --in_json / --out_json（路径同下方云端示例）
-```
-
-**3）MedMCQA 示例（同样指向本地 vLLM）**
-
-```bash
-cd dataset/pipeline
-
-python generate_intent_from_retrieval.py \
-  --in_json ../pipeline_data/questions_with_knowledge/MedMCQA/train/retrive_use_question_with_options/stella-base-en-v2/train.json \
-  --out_json ../RAG_MedMCQA_train_intent.json \
-  --base_url http://127.0.0.1:8000/v1 \
-  --api_key EMPTY \
-  --model deepseek-ai/DeepSeek-R1-Distill-Llama-70B \
-  --workers 2 --temperature 0.7 --max_tokens 4096
-```
-
-本地并发 `--workers` 不宜过大，以免打满 GPU 队列；可按吞吐再调。
-
-**MedQA（英文 US）— 训练 / 验证 / 测试**（承接第 3 步 US 检索；以下为云端 API 示例，本地部署时按上节改 `--base_url` / `--api_key` / `--model`）
-
-```bash
-cd dataset/pipeline
-
-# 训练集
-python generate_intent_from_retrieval.py \
-  --in_json ../pipeline_data/questions_with_knowledge/US/train/retrive_use_question_with_options/stella-base-en-v2/train.json \
-  --out_json ../RAG_MedQA_US_train_intent.json \
-  --model doubao-seed-2-0-mini-260428 \
-  --workers 8 --temperature 0.7 --max_tokens 4096
-
-# 验证集
-python generate_intent_from_retrieval.py \
-  --in_json ../pipeline_data/questions_with_knowledge/US/dev/retrive_use_question_with_options/stella-base-en-v2/dev.json \
-  --out_json ../RAG_MedQA_US_dev_intent.json \
-  --model doubao-seed-2-0-mini-260428 \
-  --workers 8 --temperature 0.7 --max_tokens 4096
-
-# 测试集
-python generate_intent_from_retrieval.py \
-  --in_json ../pipeline_data/questions_with_knowledge/US/test/retrive_use_question_with_options/stella-base-en-v2/test.json \
-  --out_json ../RAG_MedQA_US_test_intent.json \
-  --model doubao-seed-2-0-mini-260428 \
-  --workers 8 --temperature 0.7 --max_tokens 4096
-```
-
-**MedMCQA — 训练集 / 验证集**（承接第 3 步 MedMCQA 转换 + 检索；云端 API 示例）
-
-```bash
-cd dataset/pipeline
-
-# 训练集
-python generate_intent_from_retrieval.py \
-  --in_json ../pipeline_data/questions_with_knowledge/MedMCQA/train/retrive_use_question_with_options/stella-base-en-v2/train.json \
-  --out_json ../RAG_MedMCQA_train_intent.json \
-  --model doubao-seed-2-0-mini-260428 \
-  --workers 8 --temperature 0.7 --max_tokens 4096
-
-# 验证集
-python generate_intent_from_retrieval.py \
-  --in_json ../pipeline_data/questions_with_knowledge/MedMCQA/dev/retrive_use_question_with_options/stella-base-en-v2/dev.json \
-  --out_json ../RAG_MedMCQA_dev_intent.json \
-  --model doubao-seed-2-0-mini-260428 \
-  --workers 8 --temperature 0.7 --max_tokens 4096
-```
-
-常用参数：
-
-| 参数 | 含义 |
-|------|------|
-| `--in_json` | 检索后的样本列表 JSON（必填） |
-| `--out_json` | 输出 Intent JSON（必填） |
-| `--with_rag` | 将检索到的段落放入 prompt（仅影响生成，不改变检索文件） |
-| `--offset` / `--n` | 切片；`--n 0` 表示从 offset 起全部 |
-| `--model` / `--base_url` / `--api_key` | 模型与鉴权 |
-| `--workers` | 并发数 |
-| `--no_resume` | 忽略已有 partial，从头生成 |
-
-若已从 ModelScope 解压 `04_medqa_intent_json.tar`（或全量包），可跳过本步，直接用于下文 Intent SFT。更多说明见 [dataset/DATA_PIPELINE_CN.md](dataset/DATA_PIPELINE_CN.md)、[dataset/pipeline/README.md](dataset/pipeline/README.md)。
-
-### 权重（从 ModelScope 下载）
-
-先执行 `PACKS="01"` / `PACKS="02"` 或全量下载脚本，解压后路径如下：
+执行 `PACKS="01"` / `PACKS="02"` 或全量下载后，主要路径如下：
 
 | 路径 | 说明 | 包 |
 |------|------|-----|
@@ -438,48 +335,13 @@ python generate_intent_from_retrieval.py \
 | `parameters/QF_Struct_300M/pytorch_model.bin` | QF Struct | `01` |
 | `parameters/MiniMind_Base_300M/pytorch_model.bin` | MiniMind Base | `01` |
 | `parameters/MiniMind_Struct_300M/pytorch_model.bin` | MiniMind Struct | `01` |
-| `parameters/sft_QF_en_1024.pth` | 英文通用 SFT（阶段一） | `01` |
-| `out/run_sft_intent/sft_intent_QF_en_1024_best.pth` | Intent SFT 验证最优（推荐评测） | `02` |
-| `out/run_sft_intent/sft_intent_QF_en_1024.pth` | Intent SFT 最后一轮 | `02` |
+| `parameters/sft_QF_en_1024.pth` | 预训练后的 QubitFormer（SFT / 级联初始化） | `01` |
 
-也可按下文从零训练生成上述检查点。
+包 `01` 中的 QubitFormer 权重可直接作为 SFT 起点；SFT 产物亦可按下文协议自行得到。
 
-## 预训练（可选，从头）
+## 通用指令微调（可选）
 
-```bash
-cd trainer
-python train_pretrain.py \
-    --model_type QF \
-    --language en \
-    --hidden_size 1024 \
-    --num_hidden_layers 24 \
-    --num_attention_heads 8 \
-    --num_key_value_heads 2 \
-    --max_seq_len 1024 \
-    --batch_size 32 \
-    --learning_rate 5e-4 \
-    --epochs 1 \
-    --data_path ../dataset/SlimPajama-1B_full.jsonl \
-    --out_dir ../parameters
-```
-
-昇腾用 `train_pretrain_npu.py`。完成后得到 `parameters/pretrain_QF_en_1024_final.pth`。
-
-转成 Hugging Face 目录（可选）：
-
-```bash
-cd ../tools
-python convert_model.py --mode torch2transformers \
-    --torch_path ../parameters/pretrain_QF_en_1024_final.pth \
-    --transformers_path ../parameters/QF_Base_300M_mine \
-    --model_type QF --language en \
-    --hidden_size 1024 --num_hidden_layers 24 \
-    --num_attention_heads 8 --num_key_value_heads 2 --max_seq_len 1024
-```
-
-## 通用 SFT（阶段一，可选）
-
-若已使用仓库附带的 `parameters/sft_QF_en_1024.pth`，可跳过本节，直接进入 Intent SFT。
+若已获取 `parameters/sft_QF_en_1024.pth`，可跳过本节，直接进入对照协议训练 / 评测。
 
 ```bash
 cd trainer
@@ -499,110 +361,110 @@ python train_full_sft.py \
     --out_dir ../parameters
 ```
 
-得到 `parameters/sft_QF_en_1024.pth`。中文则改 `--language zh`，数据用 `../dataset/sft_mini_512_zh.jsonl`。
+得到 `parameters/sft_QF_en_1024.pth`。中文设置 `--language zh`，语料为 `../dataset/sft_mini_512_zh.jsonl`。
 
-也可从 HF 目录导出：`bash scripts/export_stage1_from_hf.sh`。
+亦可自 Hugging Face 目录导出：`bash scripts/export_stage1_from_hf.sh`。
 
-## MedQA Intent SFT（阶段二）
+## 对照协议：训练与评测
 
-在 `parameters/sft_QF_en_1024.pth` 上继续全参微调：
-
-```bash
-bash scripts/run_stage2_intent_sft.sh
+```text
+no_qf      ：独立上游 → 选项字母 → 准确率
+qf_norag   ：非检索分支 + QubitFormer → 选项字母 → 准确率
+qf_rag     ：检索增强分支 + QubitFormer → 选项字母 → 准确率
 ```
 
-等价命令：
+- 训练：`trainer/train_cascade_qf.py --protocol qf_norag|qf_rag`（自动加载预训练初始化权重）
+- 评测：`inference_cascade_qf.py --protocol no_qf|qf_norag|qf_rag|all`（含 QubitFormer 时自动加载对应 `*_best.pth`）
+- 路由：`model/sidecar_map.json`、`model/qf_protocol.py`、`model/sidecar_runtime.py`
+
+### 前置条件
+
+1. 获取 `parameters/ckpt_a`、`parameters/ckpt_b`、`parameters/ckpt_c`（见 ModelScope 一节）
+2. 获取 QubitFormer 初始化权重：`PACKS="01" bash scripts/download_modelscope_assets.sh`
+3. 准备样本 JSON（归档包 `04`，或检索增强后的题目 JSON）
+
+### 训练（按协议分别进行）
 
 ```bash
-python trainer/train_sft_intent.py \
-  --init_ckpt parameters/sft_QF_en_1024.pth \
-  --data_path dataset/RAG_MedQA_US_train_10178_intent.json \
-  --val_data_path dataset/RAG_MedQA_US_dev_1272_intent.json \
-  --out_dir out/run_sft_intent \
-  --model_type QF --language en \
+# 默认 NPROC=1。多进程：NPROC=8 PROTOCOL=qf_norag bash scripts/run_cascade_train.sh
+DATA=dataset/RAG_MedQA_US_train_10178.json \
+  PROTOCOL=qf_norag bash scripts/run_cascade_train.sh
+
+DATA=dataset/RAG_MedQA_US_train_10178.json \
+  PROTOCOL=qf_rag bash scripts/run_cascade_train.sh
+```
+
+输出：
+
+- `out/run_cascade_norag/cascade_QF_en_1024_best.pth`
+- `out/run_cascade_rag/cascade_QF_en_1024_best.pth`
+
+等价 Python：
+
+```bash
+python trainer/train_cascade_qf.py \
+  --protocol qf_norag \
+  --data_path dataset/RAG_MedQA_US_train_10178.json \
+  --sidecar_backend transformers \
   --hidden_size 1024 --num_hidden_layers 24 \
   --num_attention_heads 16 --num_key_value_heads 4 \
-  --max_seq_len 4096 \
-  --batch_size 6 --accumulation_steps 8 \
-  --epochs 6 --sft_lr 5e-5 \
-  --early_stop_loss 0 --best_metric val_answer_acc
+  --max_seq_len 4096 --accumulation_steps 8 --epochs 1
 ```
 
-Best 权重：`out/run_sft_intent/sft_intent_QF_en_1024_best.pth`（从 ModelScope 包 `02` 解压后评测）。
+> 说明：每个 DDP rank 均会加载对应上游模块；大规模部署优先单进程配合 vLLM 张量并行或 `device_map=auto`。
 
-## 测试集评测
-
-测试数据：`dataset/RAG_MedQA_US_test_1273_intent.json`（1273 条；`messages` 仅 system/user，标准答案见顶层 `answer_idx`；来自 ModelScope 包 `04`）。
-
-### 怎么跑
-
-先下载权重与测试数据，再评测：
+### 评测（三条对照）
 
 ```bash
-PACKS="02 04" bash scripts/download_modelscope_assets.sh
+# 一次跑完三条协议并分别报告准确率（自动选择 QubitFormer 检查点）
+DATA=dataset/RAG_MedQA_US_test_1273.json \
+PROTOCOL=all OUT_CSV=results/protocol_eval.csv \
+  bash scripts/run_cascade_infer.sh
 
-CHECKPOINT=out/run_sft_intent/sft_intent_QF_en_1024_best.pth \
-  bash scripts/eval_medqa_test.sh
+# 单条协议
+PROTOCOL=no_qf bash scripts/run_cascade_infer.sh
+PROTOCOL=qf_norag bash scripts/run_cascade_infer.sh
+PROTOCOL=qf_rag bash scripts/run_cascade_infer.sh
 ```
 
-显式指定路径：
+结果 CSV 仅含 `extracted_choice`、`matches_answer_idx` 等最终预测字段；标准输出给出各协议准确率摘要。上游中间文本不写入评测产物。
+
+### 检查点元数据清理与上传（维护用途）
 
 ```bash
-CHECKPOINT=out/run_sft_intent/sft_intent_QF_en_1024_best.pth \
-DATA=dataset/RAG_MedQA_US_test_1273_intent.json \
-RESULTS=results/medqa_intent_test1273_eval \
-TEMPS=0.7 NTKS=0.4 \
-  bash scripts/eval_medqa_test.sh
+python scripts/scrub_ckpt_metadata.py
+# 鉴权令牌仅通过环境变量注入，勿写入版本库
+set MODELSCOPE_API_TOKEN=你的token   # PowerShell: $env:MODELSCOPE_API_TOKEN=...
+python scripts/upload_ckpts_to_modelscope.py
 ```
 
-默认：`temperature=0.7`，`ntk_alpha=0.4`。
+## 复现流程摘要
 
-完整参数网格：
-
-```bash
-CHECKPOINT=out/run_sft_intent/sft_intent_QF_en_1024_best.pth \
-TEMPS=0.7,0.9,1.1,1.3,1.5 NTKS=0.4,0.6,0.8,1.0,1.2 \
-  bash scripts/eval_medqa_test.sh
-```
-
-### 结果怎么看
-
-1. 本次汇总：`results/medqa_intent_test1273_eval/summary.csv`
-2. 参考汇总：`results/medqa_intent_test1273_reference/summary.csv`
-
-| 列 | 含义 |
-|----|------|
-| `temperature` / `ntk_alpha` | 推理超参 |
-| `n_total` / `n_scored` | 样本数（应为 1273） |
-| `n_match` | 预测与 `answer_idx` 一致的条数 |
-| `accuracy` | `n_match / n_scored` |
-| `output_csv` | 该组设置的逐条结果 |
-
-```bash
-python -c "import pandas as pd; print(pd.read_csv('results/medqa_intent_test1273_eval/summary.csv')[['temperature','ntk_alpha','n_match','accuracy']])"
-```
-
-### 可选：论文式下游评测
-
-```bash
-lm-eval --model hf \
-  --model_args pretrained=./parameters/QF_Struct_300M,trust_remote_code=True \
-  --tasks hellaswag,boolq,piqa,arc_easy,winogrande,openbookqa,arc_challenge \
-  --device cuda:0 --batch_size 8
-```
-
-## 推荐流程（快速复现测试）
+### A. 三条对照协议（一键基准）
 
 ```bash
 pip install -r requirements.txt
 pip install -U modelscope
 
-# 从 ModelScope 拉取 Intent 评测所需权重与测试数据
-PACKS="02 04" bash scripts/download_modelscope_assets.sh
+# 获取 ckpt_a / ckpt_b / ckpt_c（见上文 snapshot_download）
+PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
-CHECKPOINT=out/run_sft_intent/sft_intent_QF_en_1024_best.pth \
-  bash scripts/eval_medqa_test.sh
-
-# 可选：阶段二重训（先 PACKS="01 04"）
-# bash scripts/run_stage2_intent_sft.sh
+# 一键：缺权重则先训练 qf_norag/qf_rag，再在默认测试集（US dev + US test）上评测三条协议，
+# 输出准确率对比表 results/protocol_benchmark/latest/comparison.csv
+bash scripts/run_protocol_benchmark.sh
+# 等价：python scripts/run_protocol_benchmark.py
 ```
+
+仅评测（已有 `out/run_cascade_norag` / `out/run_cascade_rag`）：
+
+```bash
+SKIP_TRAIN=1 bash scripts/run_protocol_benchmark.sh
+```
+
+自定义测试集（`name=path` 逗号分隔）：
+
+```bash
+DATASETS="medqa_us_test=dataset/RAG_MedQA_US_test_1273.json" \
+  bash scripts/run_protocol_benchmark.sh
+```
+

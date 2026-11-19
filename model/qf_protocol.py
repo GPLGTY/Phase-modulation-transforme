@@ -1,0 +1,151 @@
+"""Opaque experimental protocols for cascade / standalone evaluation.
+
+Protocols (public names only; slot wiring stays in sidecar_map.json):
+
+  no_qf     — no QubitFormer; standalone upstream letter prediction
+  qf_norag  — QubitFormer + non-retrieval cascade branch
+  qf_rag    — QubitFormer + retrieval-augmented cascade branch
+
+Train vs infer automatically resolve distinct QubitFormer checkpoints.
+"""
+
+from __future__ import annotations
+
+import copy
+from pathlib import Path
+from typing import Any
+
+from model.sidecar_runtime import _dig, load_map
+
+ROOT = Path(__file__).resolve().parents[1]
+
+PROTOCOL_NO_QF = "no_qf"
+PROTOCOL_QF_NORAG = "qf_norag"
+PROTOCOL_QF_RAG = "qf_rag"
+ALL_PROTOCOLS = (PROTOCOL_NO_QF, PROTOCOL_QF_NORAG, PROTOCOL_QF_RAG)
+
+# Default layout: train writes here; infer reads *_best.pth from here.
+DEFAULT_OUT = {
+    PROTOCOL_QF_NORAG: ROOT / "out" / "run_cascade_norag",
+    PROTOCOL_QF_RAG: ROOT / "out" / "run_cascade_rag",
+}
+DEFAULT_INIT_CKPT = ROOT / "parameters" / "sft_QF_en_1024.pth"
+
+
+def probe_has_retrieval(sample: dict, cfg: dict | None = None) -> bool:
+    cfg = cfg or load_map()
+    probe = cfg.get("probe") or {}
+    path = list(probe.get("path") or [])
+    rule = str(probe.get("rule") or "list_nonempty")
+    if not path:
+        return False
+    val = _dig(sample, path)
+    if rule == "list_nonempty":
+        return isinstance(val, list) and len(val) > 0
+    if rule == "truthy":
+        return bool(val)
+    return val is not None
+
+
+def strip_retrieval_fields(sample: dict, cfg: dict | None = None) -> dict:
+    """Shallow copy with retrieval fields cleared so the norag branch is used."""
+    cfg = cfg or load_map()
+    out = dict(sample)
+    out.pop("knowledges_for_llm", None)
+    path = list((cfg.get("probe") or {}).get("path") or [])
+    if not path:
+        return out
+    # Mutate nested copy along probe path → empty list at leaf
+    root_key = path[0]
+    if root_key not in out or not isinstance(out.get(root_key), dict):
+        return out
+    nested = copy.deepcopy(out[root_key])
+    cur: Any = nested
+    for key in path[1:-1]:
+        if not isinstance(cur, dict) or key not in cur:
+            out[root_key] = nested
+            return out
+        cur = cur[key]
+    if isinstance(cur, dict) and path[-1] in cur:
+        cur[path[-1]] = []
+    out[root_key] = nested
+    return out
+
+
+def protocol_slot(protocol: str, cfg: dict | None = None) -> str:
+    cfg = cfg or load_map()
+    if protocol == PROTOCOL_NO_QF:
+        return str(cfg.get("solo_slot") or "2")
+    if protocol == PROTOCOL_QF_NORAG:
+        return str(cfg.get("default_slot") or "0")
+    if protocol == PROTOCOL_QF_RAG:
+        return str(cfg.get("hit_slot") or "1")
+    raise ValueError(f"unknown protocol: {protocol}")
+
+
+def protocol_needs_qf(protocol: str) -> bool:
+    return protocol in (PROTOCOL_QF_NORAG, PROTOCOL_QF_RAG)
+
+
+def default_out_dir(protocol: str) -> Path:
+    if protocol not in DEFAULT_OUT:
+        raise ValueError(f"protocol {protocol} has no QubitFormer out_dir")
+    return DEFAULT_OUT[protocol]
+
+
+def resolve_qf_init_ckpt(explicit: str | None = None) -> Path:
+    """Training always starts from the released pretrained QubitFormer weights."""
+    if explicit:
+        p = Path(explicit)
+        if not p.is_file():
+            raise FileNotFoundError(f"init checkpoint not found: {p}")
+        return p
+    if not DEFAULT_INIT_CKPT.is_file():
+        raise FileNotFoundError(
+            f"default init checkpoint missing: {DEFAULT_INIT_CKPT} "
+            "(download pack 01 / parameters/sft_QF_en_1024.pth)"
+        )
+    return DEFAULT_INIT_CKPT
+
+
+def resolve_qf_infer_ckpt(
+    protocol: str,
+    *,
+    explicit: str | None = None,
+    out_dir: str | Path | None = None,
+    hidden_size: int = 1024,
+) -> Path:
+    """Inference loads the protocol-specific trained QubitFormer (not the init weights)."""
+    if not protocol_needs_qf(protocol):
+        raise ValueError(f"protocol {protocol} does not use QubitFormer")
+    if explicit:
+        p = Path(explicit)
+        if not p.is_file():
+            raise FileNotFoundError(f"infer checkpoint not found: {p}")
+        return p
+    base = Path(out_dir) if out_dir else default_out_dir(protocol)
+    stem = f"cascade_QF_en_{hidden_size}"
+    best = base / f"{stem}_best.pth"
+    latest = base / f"{stem}.pth"
+    if best.is_file():
+        return best
+    if latest.is_file():
+        return latest
+    raise FileNotFoundError(
+        f"no trained QubitFormer for protocol={protocol} under {base} "
+        f"(expected {best.name} or {latest.name}; train with --protocol {protocol} first)"
+    )
+
+
+def prepare_sample_for_protocol(sample: dict, protocol: str, cfg: dict | None = None) -> dict | None:
+    """Return a sample view for the protocol, or None to skip."""
+    cfg = cfg or load_map()
+    if protocol == PROTOCOL_NO_QF:
+        return sample
+    if protocol == PROTOCOL_QF_NORAG:
+        return strip_retrieval_fields(sample, cfg)
+    if protocol == PROTOCOL_QF_RAG:
+        if not probe_has_retrieval(sample, cfg):
+            return None
+        return sample
+    raise ValueError(f"unknown protocol: {protocol}")

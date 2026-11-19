@@ -1,8 +1,7 @@
-# MedQA 数据处理与生成流程（草案）
+# MedQA 数据构建流水线
 
-> **状态**：草案。步骤与命令已按本仓库口径整理，便于后续取舍与增补。  
-> **工作目录约定**：下文命令请在 `dataset/pipeline/` 下执行（脚本与 Embedding 权重已迁入该目录）。  
-> **已附带成品**：当前仓库已提供下游 Intent 数据，完整重跑流水线前可先使用成品文件。
+> **工作目录**：下文命令均在 `dataset/pipeline/` 下执行（脚本与 Embedding 检查点位于该目录）。  
+> **对外样本**：仅发布 / 使用 `generate_question_with_knowledges.py` 产物（带或不带检索知识）；不发布离线 Intent / `messages` 中间结果。
 
 ---
 
@@ -12,52 +11,55 @@
 MedQA 原始题库 + 教材
         │
         ▼
- ① 教材 txt → json 分块
+ ① 教材 txt → JSON 分块
         │
         ▼
- ② json → 向量库
+ ② JSON → 向量索引
         │
         ▼
- ③ 题目检索增强（题干 / 题干+选项）
+ ③ generate_question_with_knowledges.py（题干+选项检索增强）
         │
         ▼
- ④ generate_intent_from_retrieval.py
-     （检索 JSON → Intent 样本）
+  dataset/RAG_MedQA_US_{train,dev,test}_*.json
+        │
+        ▼
+  对照协议：no_qf / qf_norag / qf_rag（见根目录 README）
 ```
 
-| 本仓库已附带文件 | 用途 |
-|------------------|------|
-| `RAG_MedQA_US_train_10178_intent.json` | Intent SFT 训练（10178） |
-| `RAG_MedQA_US_dev_1272_intent.json` | Intent SFT 验证（1272） |
-| `RAG_MedQA_US_test_1273_intent.json` | Intent 测试（1273） |
+| 本仓库 / ModelScope 归档包 `04` | 用途 |
+|--------------------------------|------|
+| `RAG_MedQA_US_train_10178.json` | 训练（10178） |
+| `RAG_MedQA_US_dev_1272.json` | 验证（1272） |
+| `RAG_MedQA_US_test_1273.json` | 测试（1273） |
 
-步骤 ④ 脚本：`dataset/pipeline/generate_intent_from_retrieval.py`。若已附带上表三份 Intent 文件，可跳过 ①–④。
+第 ③ 步产物可直接作为级联输入；亦可获取上表 JSON，跳过 ①–③。  
+无检索对照：使用不含 `retrieve_info.knowledges`（或空列表）的同结构样本即可。
 
-建议的中间数据目录（生成时创建，可不入库）：
+建议的中间产物目录（运行时创建，可不入库）：
 
 ```
 dataset/pipeline_data/
-├── textbooks/                 # en / zh_paragraph / zh_sentence 及对应 *_json
-├── questions/                 # US / Mainland 的 train|dev|test.jsonl
-├── vector_stores/             # 向量库
-└── questions_with_knowledge/  # 检索增强后的题目与解析
+├── textbooks/
+├── questions/
+├── vector_stores/
+└── questions_with_knowledge/
 ```
 
 ---
 
 ## 1. 原始数据
 
-- MedQA 官方仓库：https://github.com/jind11/MedQA  
-- 数据包下载：https://drive.google.com/file/d/1ImYUSLk9JbgHXOemfvyiDiirluZHPeQw/view?usp=sharing  
-- 中文介绍：https://zhuanlan.zhihu.com/p/679590312  
+- MedQA 上游发布：https://github.com/jind11/MedQA  
+- 数据下载：https://drive.google.com/file/d/1ImYUSLk9JbgHXOemfvyiDiirluZHPeQw/view?usp=sharing  
+- 中文简介：https://zhuanlan.zhihu.com/p/679590312  
 
-下载后将题目与教材整理到 `dataset/pipeline_data/questions/`、`dataset/pipeline_data/textbooks/`（具体子目录名与官方包结构对齐即可）。
+解压后将题目与教材分别置于 `dataset/pipeline_data/questions/`、`dataset/pipeline_data/textbooks/`。
 
 ---
 
 ## 2. 预处理步骤
 
-### 2.1 教材 txt → json 分块
+### 2.1 教材文本分块为 JSON
 
 ```bash
 cd dataset/pipeline
@@ -78,7 +80,7 @@ python -u txt2json.py \
   --max_knowledge_len 1800 --language_type english --min_knowledge_len 5 --do_chunk
 ```
 
-### 2.2 json → 向量库
+### 2.2 构建向量索引
 
 ```bash
 cd dataset/pipeline
@@ -96,19 +98,11 @@ python -u vector_store.py \
   --store_top_path '../pipeline_data/vector_stores/en'
 ```
 
-运行前在 `dataset/pipeline/config.py`（或等价配置）中将 Embedding 的 `model_path` 设为本机模型路径。
+运行前确认 `dataset/pipeline/config.py` 中 Embedding 的 `model_path`。
 
-### 2.3 题目检索增强
+### 2.3 题目检索增强（对外样本的唯一生成入口）
 
-统一使用 `--query_key_name="question_with_options"`（与步骤 2.4 对齐）。勿先跑 `question` 再跑 `question_with_options` 到同一输出路径，以免覆盖。
-
-参数说明：
-
-- `--device_ids`：GPU 列表；单卡用 `"0"`，并设 `--num_process=1`。  
-- `--topk_knowledge` / `--knowledge_threshold`：召回条数与相似度阈值。  
-- 产物路径：`{output_json_dir}/retrive_use_question_with_options/{embedding_model_name}/{output_json_file}`
-
-#### 2.3.1 MedQA 英文 US（Intent 主路线）
+统一使用 `--query_key_name="question_with_options"`。
 
 ```bash
 cd dataset/pipeline
@@ -121,68 +115,21 @@ python generate_question_with_knowledges.py \
   --output_json_dir="../pipeline_data/questions_with_knowledge/US/train" \
   --output_json_file="train.json" --device_ids="0,1,2,3,4,5,6,7" \
   --query_key_name="question_with_options"
-
-# 将 train → dev / test，路径同步改为 US/dev、US/test
 ```
 
-#### 2.3.2 MedQA 中文 Mainland（可选）
+将输出整理 / 复制为仓库根下约定文件名，例如：
 
-同上，改用 `Mainland/*.jsonl`、`stella-base-zh-v2`、`vector_stores/zh_paragraph`。
+`dataset/RAG_MedQA_US_train_10178.json`
 
-#### 2.3.3 MedMCQA（先转换，再检索）
+字段应与 `generate_question_with_knowledges.py` 一致；**不要**再经离线 Intent 脚本写入 `messages`。
 
-原始为 `opa/opb/opc/opd` + `cop`，先转为 MedQA 风格 jsonl：
+### 2.4 进入训练与推理
+
+采用根目录三条对照协议（`no_qf` / `qf_norag` / `qf_rag`）。推荐一键基准：
 
 ```bash
-cd dataset/pipeline
-
-python convert_medmcqa_to_medqa_jsonl.py \
-  --in_jsonl ../pipeline_data/questions/MedMCQA/train.json \
-  --out_jsonl ../pipeline_data/questions/MedMCQA/train.jsonl
-
-python convert_medmcqa_to_medqa_jsonl.py \
-  --in_jsonl ../pipeline_data/questions/MedMCQA/dev.json \
-  --out_jsonl ../pipeline_data/questions/MedMCQA/dev.jsonl
-
-python generate_question_with_knowledges.py \
-  --num_process=8 --index_key_name="id" --topk_knowledge=10 --knowledge_threshold=0.65 \
-  --input_jsonl_path="../pipeline_data/questions/MedMCQA/train.jsonl" \
-  --embedding_model_name="stella-base-en-v2" \
-  --store_path="../pipeline_data/vector_stores/en" \
-  --output_json_dir="../pipeline_data/questions_with_knowledge/MedMCQA/train" \
-  --output_json_file="train.json" --device_ids="0,1,2,3,4,5,6,7" \
-  --query_key_name="question_with_options"
-
-# 验证集：MedMCQA/dev.jsonl → questions_with_knowledge/MedMCQA/dev
+bash scripts/run_protocol_benchmark.sh
 ```
-
-### 2.4 检索 JSON → Intent
-
-脚本：`dataset/pipeline/generate_intent_from_retrieval.py`。`--in_json` 须为 2.3 的 `question_with_options` 产物。
-
-```bash
-# 密钥仅通过环境变量或 CLI，勿写入代码
-export VOLCENGINE_ARK_API_KEY='你的密钥'   # 或 ARK_API_KEY
-
-cd dataset/pipeline
-
-# MedQA US
-python generate_intent_from_retrieval.py \
-  --in_json ../pipeline_data/questions_with_knowledge/US/train/retrive_use_question_with_options/stella-base-en-v2/train.json \
-  --out_json ../RAG_MedQA_US_train_intent.json \
-  --model doubao-seed-2-0-mini-260428 \
-  --workers 8
-
-# MedMCQA（承接 2.3.3）
-python generate_intent_from_retrieval.py \
-  --in_json ../pipeline_data/questions_with_knowledge/MedMCQA/train/retrive_use_question_with_options/stella-base-en-v2/train.json \
-  --out_json ../RAG_MedMCQA_train_intent.json \
-  --model doubao-seed-2-0-mini-260428 \
-  --workers 8
-# 可选：--with_rag  --offset 0 --n 100  --base_url ... --api_key ...
-```
-
-输出可用于 Intent SFT；也可从 ModelScope 下载 `04_medqa_intent_json.tar`（`PACKS="04"`）跳过生成。完整命令见根目录 README。
 
 ---
 
@@ -190,25 +137,15 @@ python generate_intent_from_retrieval.py \
 
 | 用途 | 说明 |
 |------|------|
-| Python / PyTorch | 与仓库根目录 `requirements.txt` 对齐；检索与向量化另需 Embedding 依赖 |
-| Embedding | 中文示例 `stella-base-zh-v2`，英文示例 `stella-base-en-v2`（路径在 config 中配置） |
-| LLM API | 步骤 2.4 需要 OpenAI 兼容接口；密钥用环境变量 / `--api_key` |
-| 模型下载 | 可用 https://hf-mirror.com/ 等镜像加速 |
+| Python / PyTorch | 与仓库根目录 `requirements.txt` 对齐 |
+| Embedding | `stella-base-en-v2` / `stella-base-zh-v2`（路径在 config 中配置） |
+| 级联上游模块 | `parameters/ckpt_a`、`parameters/ckpt_b`、`parameters/ckpt_c`（ModelScope） |
 
----
-
-## 4. 已迁入内容
+## 4. 已纳入内容
 
 | 类别 | 路径 |
 |------|------|
 | 流水线脚本 | `dataset/pipeline/*.py`、`build_vectorstore.sh` |
 | MedMCQA 转换 | `dataset/pipeline/convert_medmcqa_to_medqa_jsonl.py` |
-| Intent 改写 | `dataset/pipeline/generate_intent_from_retrieval.py` |
-| Embedding 权重 | `dataset/pipeline/models/infgrad/stella-base-{en,zh}-v2/`、`models/stella-large-zh-v2/` |
-| 路径配置 | `dataset/pipeline/config.py`（自动指向本目录 models） |
-
-## 5. 待定事项
-
-- [ ] 补充 `langchain` / `faiss` / `openai` 等流水线依赖说明（若与根目录 `requirements.txt` 不同）  
-
-
+| Embedding 检查点 | `dataset/pipeline/models/` |
+| 路径配置 | `dataset/pipeline/config.py` |

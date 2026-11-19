@@ -1,41 +1,26 @@
 #!/usr/bin/env python3
-"""From retrieval JSON → Intent samples (one LLM call).
+"""[DEPRECATED] 离线 Intent 生成已停用（D1）。
 
-Supports cloud or local OpenAI-compatible endpoints. RAG is optional.
-Resume from {out_json}.partial.json by sample id.
+训练 / 测试 / 推理请改用在线级联：
+  - trainer/train_cascade_qf.py
+  - inference_cascade_qf.py
+  - scripts/run_cascade_train.sh / run_cascade_infer.sh
+
+本文件仅保留兼容；新流程不再依赖离线 Intent JSON 生成。
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from openai import OpenAI
-
 # ---------------------------------------------------------------------------
-# Fill these in. CLI flags override the same fields.
-# Local vLLM/Ollama/LM Studio: set BASE_URL to the OpenAI-compatible root
-# (often .../v1) and API_KEY to any non-empty placeholder such as "EMPTY".
+# Prompt / 解析逻辑（与原先 Intent 格式一致）
 # ---------------------------------------------------------------------------
-CONFIG = {
-    "base_url": os.getenv(
-        "VOLCENGINE_ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/v3"
-    ),
-    # 勿在仓库中写入真实密钥；请用环境变量或 --api_key
-    "api_key": os.getenv("VOLCENGINE_ARK_API_KEY") or os.getenv("ARK_API_KEY") or "",
-    "model": os.getenv("INTENT_REWRITE_MODEL", "doubao-seed-2-0-mini-260428"),
-    "workers": 8,
-    "temperature": 0.7,
-    "max_tokens": 4096,
-    "timeout": 3600.0,
-}
-
 SYSTEM = (
     "You are an expert in intent recognition. Based on the provided information, "
     "you can determine which of the options A through E the intent of the given "
@@ -134,6 +119,202 @@ THEREFORE_LINE_RE = re.compile(
 )
 
 
+# ---------------------------------------------------------------------------
+# 本地推理后端
+# ---------------------------------------------------------------------------
+class LocalModel:
+    """统一本地生成接口：一次可喂多条 prompt。"""
+
+    def generate(
+        self,
+        prompts: list[str],
+        *,
+        temperature: float,
+        max_tokens: int,
+        presence_penalty: float = 0.0,
+        frequency_penalty: float = 0.0,
+        repetition_penalty: float = 1.0,
+    ) -> list[str]:
+        raise NotImplementedError
+
+
+class TransformersLocalModel(LocalModel):
+    def __init__(
+        self,
+        model_path: str,
+        *,
+        device: str = "cuda",
+        dtype: str = "bfloat16",
+        trust_remote_code: bool = True,
+        max_model_len: int = 8192,
+    ) -> None:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        self.device = device
+        self.max_model_len = max_model_len
+        torch_dtype = {
+            "bfloat16": torch.bfloat16,
+            "float16": torch.float16,
+            "float32": torch.float32,
+        }.get(dtype, torch.bfloat16)
+
+        print(f"[transformers] loading {model_path} dtype={dtype} device={device}", flush=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_path, trust_remote_code=trust_remote_code
+        )
+        if self.tokenizer.pad_token_id is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            torch_dtype=torch_dtype,
+            device_map="auto" if device == "auto" else None,
+            trust_remote_code=trust_remote_code,
+        )
+        if device != "auto":
+            self.model.to(device)
+        self.model.eval()
+
+    def _apply_chat(self, prompt: str) -> str:
+        messages = [{"role": "user", "content": prompt}]
+        if hasattr(self.tokenizer, "apply_chat_template"):
+            try:
+                return self.tokenizer.apply_chat_template(
+                    messages, tokenize=False, add_generation_prompt=True
+                )
+            except Exception:
+                pass
+        return prompt
+
+    def generate(
+        self,
+        prompts: list[str],
+        *,
+        temperature: float,
+        max_tokens: int,
+        presence_penalty: float = 0.0,
+        frequency_penalty: float = 0.0,
+        repetition_penalty: float = 1.0,
+    ) -> list[str]:
+        import torch
+
+        del presence_penalty, frequency_penalty  # transformers 无 repetition_penalty 近似
+        outs: list[str] = []
+        for prompt in prompts:
+            text = self._apply_chat(prompt)
+            inputs = self.tokenizer(
+                text,
+                return_tensors="pt",
+                truncation=True,
+                max_length=max(64, self.max_model_len - max_tokens),
+            )
+            if self.device != "auto":
+                inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            do_sample = temperature > 0
+            gen_kwargs = {
+                "max_new_tokens": max_tokens,
+                "do_sample": do_sample,
+                "pad_token_id": self.tokenizer.pad_token_id,
+                "eos_token_id": self.tokenizer.eos_token_id,
+                "repetition_penalty": float(repetition_penalty) if repetition_penalty else 1.0,
+            }
+            if do_sample:
+                gen_kwargs["temperature"] = max(temperature, 1e-5)
+                gen_kwargs["top_p"] = 0.95
+            with torch.inference_mode():
+                output_ids = self.model.generate(**inputs, **gen_kwargs)
+            prompt_len = inputs["input_ids"].shape[-1]
+            new_ids = output_ids[0, prompt_len:]
+            outs.append(self.tokenizer.decode(new_ids, skip_special_tokens=True))
+        return outs
+
+
+class VLLMLocalModel(LocalModel):
+    def __init__(
+        self,
+        model_path: str,
+        *,
+        dtype: str = "bfloat16",
+        tensor_parallel_size: int = 1,
+        gpu_memory_utilization: float = 0.9,
+        max_model_len: int = 8192,
+        trust_remote_code: bool = True,
+    ) -> None:
+        from vllm import LLM
+
+        print(
+            f"[vllm] loading {model_path} dtype={dtype} "
+            f"tp={tensor_parallel_size} max_model_len={max_model_len}",
+            flush=True,
+        )
+        self.llm = LLM(
+            model=model_path,
+            dtype=dtype,
+            tensor_parallel_size=tensor_parallel_size,
+            gpu_memory_utilization=gpu_memory_utilization,
+            max_model_len=max_model_len,
+            trust_remote_code=trust_remote_code,
+        )
+        self.tokenizer = self.llm.get_tokenizer()
+
+    def _apply_chat(self, prompt: str) -> str:
+        messages = [{"role": "user", "content": prompt}]
+        if hasattr(self.tokenizer, "apply_chat_template"):
+            try:
+                return self.tokenizer.apply_chat_template(
+                    messages, tokenize=False, add_generation_prompt=True
+                )
+            except Exception:
+                pass
+        return prompt
+
+    def generate(
+        self,
+        prompts: list[str],
+        *,
+        temperature: float,
+        max_tokens: int,
+        presence_penalty: float = 0.0,
+        frequency_penalty: float = 0.0,
+        repetition_penalty: float = 1.0,
+    ) -> list[str]:
+        from vllm import SamplingParams
+
+        texts = [self._apply_chat(p) for p in prompts]
+        params = SamplingParams(
+            temperature=max(temperature, 0.0),
+            max_tokens=max_tokens,
+            presence_penalty=presence_penalty,
+            frequency_penalty=frequency_penalty,
+            repetition_penalty=repetition_penalty if repetition_penalty else 1.0,
+            top_p=0.95 if temperature > 0 else 1.0,
+        )
+        results = self.llm.generate(texts, params)
+        return [r.outputs[0].text if r.outputs else "" for r in results]
+
+
+def build_local_model(args: argparse.Namespace) -> LocalModel:
+    if args.backend == "vllm":
+        return VLLMLocalModel(
+            args.model_path,
+            dtype=args.dtype,
+            tensor_parallel_size=args.tensor_parallel_size,
+            gpu_memory_utilization=args.gpu_memory_utilization,
+            max_model_len=args.max_model_len,
+            trust_remote_code=not args.no_trust_remote_code,
+        )
+    return TransformersLocalModel(
+        args.model_path,
+        device=args.device,
+        dtype=args.dtype,
+        trust_remote_code=not args.no_trust_remote_code,
+        max_model_len=args.max_model_len,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 样本字段 / 清洗 / 解析
+# ---------------------------------------------------------------------------
 def knowledges_for_llm(sample: dict) -> str:
     if sample.get("knowledges_for_llm"):
         return str(sample["knowledges_for_llm"]).strip()
@@ -188,7 +369,6 @@ def _significant_tokens(text: str) -> set[str]:
 
 
 def _letter_conflicts(text: str, letter: str, options: dict[str, str]) -> bool:
-    """A bold 'A. some other option' is not the question's option A."""
     real = options.get(letter) or ""
     if not real:
         return False
@@ -206,7 +386,6 @@ def _letter_conflicts(text: str, letter: str, options: dict[str, str]) -> bool:
 
 
 def _letter_from_option_names(text: str, question: str) -> str | None:
-    """Conclusion names the option text ('Chi square test') but not its letter."""
     options = parse_options(question)
     conc = _conclusion(text)
     if not options or not conc:
@@ -306,6 +485,8 @@ def clean_output(text: str) -> str:
     text = re.sub(r"\s*```$", "", text)
     text = re.sub(r"</sam>\s*", "", text, flags=re.I)
     text = re.sub(r"</?think>\s*", "", text, flags=re.I)
+    # DeepSeek-R1 等思考模型可能夹带 reasoning 标记
+    text = re.sub(r"(?is)<think>.*?</think>\s*", "", text)
     text = re.sub(r"^(?:User|USER|user message)\s*:\s*", "", text, flags=re.I)
     if not text.startswith(LEAD):
         body = text.lstrip()
@@ -328,25 +509,6 @@ def make_prompt(sample: dict, with_rag: bool) -> str:
             raise RuntimeError("with_rag set but knowledges empty")
         return PROMPT_RAG.format(knowledges_for_llm=kb, question_with_options=q)
     return PROMPT_NO_RAG.format(question_with_options=q)
-
-
-def _message_text(msg) -> str:
-    """Prefer the formal answer. If it is empty, use the reasoning trace."""
-    content = (getattr(msg, "content", None) or "").strip()
-    extra = getattr(msg, "model_extra", None) or {}
-    reasoning = getattr(msg, "reasoning_content", None) or extra.get("reasoning_content") or ""
-    reasoning = str(reasoning or "").strip()
-    if _is_repetition(content):
-        content = ""
-    if _is_repetition(reasoning):
-        reasoning = ""
-    if content and "Analysis" in content and "Conclusion" in content:
-        return content
-    if reasoning and "Analysis" in reasoning and "Conclusion" in reasoning:
-        return reasoning
-    if content:
-        return content
-    return reasoning
 
 
 def repair_prompt(question: str, notes: str) -> str:
@@ -395,8 +557,7 @@ def option_lock(question: str) -> str:
 
 
 def call_model(
-    client: OpenAI,
-    model: str,
+    model: LocalModel,
     prompt: str,
     temperature: float,
     max_tokens: int,
@@ -404,26 +565,21 @@ def call_model(
     frequency_penalty: float = 0.0,
     repetition_penalty: float = 1.0,
 ) -> str:
-    kwargs = {
-        "model": model,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-    }
-    if presence_penalty:
-        kwargs["presence_penalty"] = presence_penalty
-    if frequency_penalty:
-        kwargs["frequency_penalty"] = frequency_penalty
-    if repetition_penalty and repetition_penalty != 1.0:
-        kwargs["extra_body"] = {"repetition_penalty": repetition_penalty}
-    r = client.chat.completions.create(**kwargs)
-    return clean_output(_message_text(r.choices[0].message))
+    texts = model.generate(
+        [prompt],
+        temperature=temperature,
+        max_tokens=max_tokens,
+        presence_penalty=presence_penalty,
+        frequency_penalty=frequency_penalty,
+        repetition_penalty=repetition_penalty,
+    )
+    return clean_output(texts[0] if texts else "")
 
 
 def build_sample(
     src: dict,
     user_text: str,
-    model: str,
+    model_name: str,
     with_rag: bool,
     source: str,
 ) -> dict:
@@ -447,7 +603,7 @@ def build_sample(
         ],
         "model_prompt_text": f"[INST] {SYSTEM}\n\n{user_text} [/INST]",
         "source": source,
-        "user_rewrite_model": model,
+        "user_rewrite_model": model_name,
         "user_rewrite_no_gold": True,
         "user_rewrite_with_rag": bool(with_rag),
     }
@@ -473,37 +629,129 @@ def load_done(partial_path: Path) -> dict[str, dict]:
 
 def save_partial(partial_path: Path, done: dict[str, dict], meta: dict) -> None:
     payload = {"meta": meta, "samples": [done[k] for k in sorted(done, key=str)]}
-    partial_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    partial_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
+def model_tag(model_path: str) -> str:
+    return Path(model_path.rstrip("/\\")).name or model_path
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Retrieval JSON → intent JSON (OpenAI-compatible API)."
+        description="检索 JSON → Intent JSON（本地部署大模型，无云端/HTTP 接口）。"
     )
     p.add_argument("--in_json", type=Path, required=True)
     p.add_argument("--out_json", type=Path, required=True)
-    p.add_argument("--with_rag", action="store_true", help="Put retrieved passages in the LLM prompt only")
+    p.add_argument(
+        "--model_path",
+        type=str,
+        required=True,
+        help="本地模型目录或 HF 模型名，例如 /models/DeepSeek-R1-Distill-Qwen-32B",
+    )
+    p.add_argument(
+        "--backend",
+        choices=("transformers", "vllm"),
+        default="transformers",
+        help="本地推理后端；默认 transformers，吞吐更高可选 vllm（进程内，非 HTTP）",
+    )
+    p.add_argument("--with_rag", action="store_true", help="仅把检索段落放进 prompt，不写入输出")
     p.add_argument("--offset", type=int, default=0)
-    p.add_argument("--n", type=int, default=0, help="0 = remaining samples after offset")
-    p.add_argument("--model", default=CONFIG["model"])
-    p.add_argument("--base_url", default=CONFIG["base_url"])
-    p.add_argument("--api_key", default=CONFIG["api_key"])
-    p.add_argument("--workers", type=int, default=CONFIG["workers"])
-    p.add_argument("--temperature", type=float, default=CONFIG["temperature"])
-    p.add_argument("--max_tokens", type=int, default=CONFIG["max_tokens"])
-    p.add_argument("--no_resume", action="store_true", help="Ignore existing partial and start over")
+    p.add_argument("--n", type=int, default=0, help="0 = offset 之后全部样本")
+    p.add_argument("--temperature", type=float, default=0.7)
+    p.add_argument("--max_tokens", type=int, default=4096)
+    p.add_argument("--device", default="cuda", help="transformers: cuda / cpu / auto")
+    p.add_argument("--dtype", default="bfloat16", choices=("bfloat16", "float16", "float32"))
+    p.add_argument("--max_model_len", type=int, default=8192)
+    p.add_argument("--tensor_parallel_size", type=int, default=1, help="仅 vllm")
+    p.add_argument("--gpu_memory_utilization", type=float, default=0.9, help="仅 vllm")
+    p.add_argument("--no_trust_remote_code", action="store_true")
+    p.add_argument("--no_resume", action="store_true", help="忽略已有 partial，从头生成")
     p.add_argument(
         "--hard_retry",
         action="store_true",
-        help="Skip the unpenalized first try and use stronger anti-repetition sampling",
+        help="跳过无惩罚首轮，直接用更强的反重复采样",
     )
     return p.parse_args()
 
 
+def process_one(
+    model: LocalModel,
+    sample: dict,
+    *,
+    with_rag: bool,
+    model_name: str,
+    source_placeholder: str,
+    temperature: float,
+    max_tokens: int,
+    hard_retry: bool,
+) -> tuple[str, dict | None, str | None]:
+    sid = str(sample.get("id"))
+    base_prompt = make_prompt(sample, with_rag)
+    question = sample.get("question_with_options") or ""
+    schedules = (
+        (temperature, max_tokens, 0.0, 0.0, 1.0, False),
+        (min(temperature, 0.4), min(max_tokens, 3072), 0.8, 0.4, 1.12, True),
+        (0.3, min(max_tokens, 3072), 1.2, 0.8, 1.25, True),
+        (0.2, min(max_tokens, 3072), 1.6, 1.2, 1.4, True),
+        (0.15, min(max_tokens, 3072), 1.8, 1.5, 1.55, True),
+    )
+    if hard_retry:
+        schedules = schedules[1:]
+    last_err = "unknown"
+    for attempt, (temp, tok, presence, frequency, repetition, lock) in enumerate(schedules):
+        prompt = base_prompt + (option_lock(question) if lock else "")
+        try:
+            text = call_model(
+                model, prompt, temp, tok, presence, frequency, repetition
+            )
+            has_analysis = "**Analysis:**" in text or "Analysis:" in text
+            has_conclusion = "**Conclusion:**" in text or "Conclusion:" in text
+            if (
+                (not has_analysis or not has_conclusion)
+                and len(text) >= 400
+                and not _is_repetition(text)
+            ):
+                repaired = call_model(
+                    model,
+                    repair_prompt(question, text),
+                    0.2,
+                    min(tok, 3072),
+                    0.6,
+                    0.4,
+                    1.15,
+                )
+                if "**Analysis:**" in repaired or "Analysis:" in repaired:
+                    text = repaired
+            if _is_repetition(text):
+                raise RuntimeError("repetition_loop")
+            if len(text) < 400:
+                raise RuntimeError(f"too_short len={len(text)}")
+            if "**Analysis:**" not in text and "Analysis:" not in text:
+                raise RuntimeError("missing Analysis")
+            if "**Conclusion:**" not in text and "Conclusion:" not in text:
+                raise RuntimeError("missing Conclusion")
+            if not re.search(
+                r"Therefore, the answer to the above question is: $",
+                text,
+            ):
+                raise RuntimeError("missing bare therefore line")
+            built = build_sample(
+                sample, text, model_name, with_rag, source_placeholder
+            )
+            return sid, built, None
+        except Exception as e:
+            last_err = str(e)
+            time.sleep(min(2 * (attempt + 1), 8))
+    return sid, None, last_err
+
+
 def main() -> None:
     args = parse_args()
-    if not args.api_key or args.api_key.startswith("REPLACE_"):
-        raise SystemExit("Set VOLCENGINE_ARK_API_KEY / ARK_API_KEY, or pass --api_key")
+    model_path = Path(args.model_path)
+    if model_path.exists() and not (model_path.is_dir() or model_path.is_file()):
+        raise SystemExit(f"invalid --model_path: {args.model_path}")
 
     all_data = json.loads(args.in_json.read_text(encoding="utf-8"))
     if not isinstance(all_data, list):
@@ -513,35 +761,30 @@ def main() -> None:
     if not slice_data:
         raise SystemExit("empty slice")
 
+    tag = model_tag(args.model_path)
     k = rag_k(slice_data[0], args.with_rag)
     planned_n = len(slice_data)
-    source_placeholder = f"{args.model}_rag{k}_n{planned_n}"
+    source_placeholder = f"{tag}_local_{args.backend}_rag{k}_n{planned_n}"
 
     partial_path = args.out_json.with_suffix(args.out_json.suffix + ".partial.json")
     if args.out_json.suffix == ".json":
         partial_path = args.out_json.with_name(args.out_json.stem + ".partial.json")
 
     done: dict[str, dict] = {} if args.no_resume else load_done(partial_path)
-    todo = []
-    for s in slice_data:
-        sid = str(s.get("id"))
-        if sid in done:
-            continue
-        todo.append(s)
+    todo = [s for s in slice_data if str(s.get("id")) not in done]
 
     print(
         json.dumps(
             {
                 "in_json": str(args.in_json),
                 "out_json": str(args.out_json),
-                "model": args.model,
-                "base_url": args.base_url,
+                "model_path": args.model_path,
+                "backend": args.backend,
                 "with_rag": args.with_rag,
                 "rag_k": k,
                 "slice_n": planned_n,
                 "resume_done": len(done),
                 "todo": len(todo),
-                "workers": args.workers,
             },
             indent=2,
         ),
@@ -550,117 +793,54 @@ def main() -> None:
 
     if not todo:
         out = [done[str(s.get("id"))] for s in slice_data if str(s.get("id")) in done]
-        source = f"{args.model}_rag{k}_n{len(out)}"
+        source = f"{tag}_local_{args.backend}_rag{k}_n{len(out)}"
         for s in out:
             s["source"] = source
         args.out_json.parent.mkdir(parents=True, exist_ok=True)
-        args.out_json.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        args.out_json.write_text(
+            json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         print(f"nothing to run; wrote {args.out_json} n={len(out)} source={source}", flush=True)
         return
 
-    client = OpenAI(base_url=args.base_url, api_key=args.api_key, timeout=CONFIG["timeout"])
+    model = build_local_model(args)
     errors: dict[str, str] = {}
     t0 = time.time()
-
-    def job(sample: dict):
-        sid = str(sample.get("id"))
-        base_prompt = make_prompt(sample, args.with_rag)
-        question = sample.get("question_with_options") or ""
-        # Later attempts lock the original options and penalize repeated sentences.
-        # Token cap stays high enough for a 2000–5000 character answer, low enough
-        # that a repeated-line loop does not run to 8192.
-        schedules = (
-            (args.temperature, args.max_tokens, 0.0, 0.0, 1.0, False),
-            (min(args.temperature, 0.4), min(args.max_tokens, 3072), 0.8, 0.4, 1.12, True),
-            (0.3, min(args.max_tokens, 3072), 1.2, 0.8, 1.25, True),
-            (0.2, min(args.max_tokens, 3072), 1.6, 1.2, 1.4, True),
-            (0.15, min(args.max_tokens, 3072), 1.8, 1.5, 1.55, True),
-        )
-        if args.hard_retry:
-            schedules = schedules[1:]
-        last_err = "unknown"
-        for attempt, (temp, max_tokens, presence, frequency, repetition, lock) in enumerate(schedules):
-            prompt = base_prompt + (option_lock(question) if lock else "")
-            try:
-                text = call_model(
-                    client,
-                    args.model,
-                    prompt,
-                    temp,
-                    max_tokens,
-                    presence,
-                    frequency,
-                    repetition,
-                )
-                has_analysis = "**Analysis:**" in text or "Analysis:" in text
-                has_conclusion = "**Conclusion:**" in text or "Conclusion:" in text
-                if (not has_analysis or not has_conclusion) and len(text) >= 400 and not _is_repetition(text):
-                    repaired = call_model(
-                        client,
-                        args.model,
-                        repair_prompt(question, text),
-                        0.2,
-                        min(max_tokens, 3072),
-                        0.6,
-                        0.4,
-                        1.15,
-                    )
-                    if "**Analysis:**" in repaired or "Analysis:" in repaired:
-                        text = repaired
-                if _is_repetition(text):
-                    raise RuntimeError("repetition_loop")
-                if len(text) < 400:
-                    raise RuntimeError(f"too_short len={len(text)}")
-                if "**Analysis:**" not in text and "Analysis:" not in text:
-                    raise RuntimeError("missing Analysis")
-                if "**Conclusion:**" not in text and "Conclusion:" not in text:
-                    raise RuntimeError("missing Conclusion")
-                if not re.search(
-                    r"Therefore, the answer to the above question is: $",
-                    text,
-                ):
-                    raise RuntimeError("missing bare therefore line")
-                built = build_sample(
-                    sample, text, args.model, args.with_rag, source_placeholder
-                )
-                return sid, built, None
-            except Exception as e:
-                last_err = str(e)
-                time.sleep(2 * (attempt + 1))
-        return sid, None, last_err
 
     def run_batch(samples: list[dict], label: str) -> None:
         if not samples:
             return
         print(f"{label}: {len(samples)} items", flush=True)
-        with ThreadPoolExecutor(max_workers=max(1, args.workers)) as ex:
-            futs = {ex.submit(job, s): s for s in samples}
-            finished = 0
-            for fut in as_completed(futs):
-                sid, built, err = fut.result()
-                finished += 1
-                if err:
-                    errors[sid] = err
-                    print(
-                        f"[{finished}/{len(samples)}] FAIL id={sid} {err[:160]}",
-                        flush=True,
-                    )
-                else:
-                    errors.pop(sid, None)
-                    done[sid] = built
-                    print(
-                        f"[{finished}/{len(samples)}] OK id={sid} "
-                        f"intent={built['intent_letter']} gold={built.get('gold_letter')} "
-                        f"done={len(done)}/{planned_n}",
-                        flush=True,
-                    )
-                if len(done) % 20 == 0:
-                    save_partial(
-                        partial_path,
-                        done,
-                        {"source": source_placeholder, "ok": len(done), "todo": planned_n},
-                    )
-                    print(f"checkpoint {partial_path} n={len(done)}", flush=True)
+        for i, sample in enumerate(samples, 1):
+            sid, built, err = process_one(
+                model,
+                sample,
+                with_rag=args.with_rag,
+                model_name=tag,
+                source_placeholder=source_placeholder,
+                temperature=args.temperature,
+                max_tokens=args.max_tokens,
+                hard_retry=args.hard_retry,
+            )
+            if err:
+                errors[sid] = err
+                print(f"[{i}/{len(samples)}] FAIL id={sid} {err[:160]}", flush=True)
+            else:
+                errors.pop(sid, None)
+                done[sid] = built
+                print(
+                    f"[{i}/{len(samples)}] OK id={sid} "
+                    f"intent={built['intent_letter']} gold={built.get('gold_letter')} "
+                    f"done={len(done)}/{planned_n}",
+                    flush=True,
+                )
+            if len(done) % 10 == 0:
+                save_partial(
+                    partial_path,
+                    done,
+                    {"source": source_placeholder, "ok": len(done), "todo": planned_n},
+                )
+                print(f"checkpoint {partial_path} n={len(done)}", flush=True)
 
     run_batch(todo, "pass1")
     retry_ids = set(errors)
@@ -686,20 +866,28 @@ def main() -> None:
         sys.exit(1)
 
     out = [done[str(s.get("id"))] for s in slice_data]
-    source = f"{args.model}_rag{k}_n{len(out)}"
+    source = f"{tag}_local_{args.backend}_rag{k}_n{len(out)}"
     for s in out:
         s["source"] = source
 
     args.out_json.parent.mkdir(parents=True, exist_ok=True)
-    args.out_json.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.out_json.write_text(
+        json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
-    both = [s for s in out if s.get("gold_letter") in list("ABCDE") and s.get("intent_letter") in list("ABCDE")]
+    both = [
+        s
+        for s in out
+        if s.get("gold_letter") in list("ABCDE") and s.get("intent_letter") in list("ABCDE")
+    ]
     agree = sum(1 for s in both if s["gold_letter"] == s["intent_letter"])
     print(
         json.dumps(
             {
                 "out_json": str(args.out_json),
                 "source": source,
+                "backend": args.backend,
+                "model_path": args.model_path,
                 "n": len(out),
                 "with_rag": args.with_rag,
                 "rag_k": k,

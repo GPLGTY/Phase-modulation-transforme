@@ -1,14 +1,9 @@
-# MedQA Intent 测试参考结果
+# 内部参考结果（不对外）
 
-目录内为参考评测 CSV 与 `summary.csv`。
-
-复现前先从 ModelScope 下载 Intent 权重与测试数据：
+本目录为历史评测参考产物，**不纳入对外实验协议说明**。请使用：
 
 ```bash
-PACKS="02 04" bash scripts/download_modelscope_assets.sh
-
-CHECKPOINT=out/run_sft_intent/sft_intent_QF_en_1024_best.pth \
-  bash scripts/eval_medqa_test.sh
+bash scripts/run_protocol_benchmark.sh
 ```
 
-默认评测设置：`temperature=0.7`，`ntk_alpha=0.4`。
+对比表见 `results/protocol_benchmark/latest/comparison.csv`。
