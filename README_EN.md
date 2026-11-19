@@ -17,7 +17,14 @@ Three contrastive evaluation protocols are provided (each predicts an option let
 | `pmt_norag` | Non-retrieval upstream → Phase-modulation-transforme | `--protocol pmt_norag` |
 | `pmt_rag` | Retrieval-augmented upstream → Phase-modulation-transforme | `--protocol pmt_rag` |
 
-Training and inference automatically resolve distinct Phase-modulation-transforme checkpoints: training initializes from `parameters/sft_PMT_en_1024.pth` and writes to `out/run_pmt_norag/` or `out/run_pmt_rag/`; inference loads the corresponding `*_best.pth`. Evaluation artifacts record the final option letter and accuracy-related fields.
+Training and inference automatically resolve distinct Phase-modulation-transforme checkpoints. Default paths:
+
+- **Init weights (download / pretrain output)**: `parameters/sft_PMT_en_1024.pth`
+- **`pmt_norag` train default save dir**: `out/run_pmt_norag/`, best checkpoint `cascade_PMT_en_1024_best.pth`
+- **`pmt_rag` train default save dir**: `out/run_pmt_rag/`, best checkpoint `cascade_PMT_en_1024_best.pth`
+- **Eval default load**: the matching `*_best.pth` under those dirs (override via env/args)
+
+Evaluation artifacts record the final option letter and accuracy-related fields.
 
 > The default training seed is `1337`; GPU nondeterminism may induce negligible numerical variation.
 >
@@ -379,6 +386,13 @@ pmt_rag     : retrieval-augmented branch + Phase-modulation-transforme → optio
 
 ### Training (per protocol)
 
+By default training loads init weights from `parameters/sft_PMT_en_1024.pth` and writes checkpoints to the protocol directory:
+
+- `PROTOCOL=pmt_norag` → save under `out/run_pmt_norag/`, best file `out/run_pmt_norag/cascade_PMT_en_1024_best.pth`
+- `PROTOCOL=pmt_rag` → save under `out/run_pmt_rag/`, best file `out/run_pmt_rag/cascade_PMT_en_1024_best.pth`
+
+Override with env vars: `INIT` (init checkpoint path), `OUT` (output directory).
+
 ```bash
 DATA=dataset/RAG_MedQA_US_train_10178.json \
   PROTOCOL=pmt_norag bash scripts/run_cascade_train.sh
@@ -387,12 +401,9 @@ DATA=dataset/RAG_MedQA_US_train_10178.json \
   PROTOCOL=pmt_rag bash scripts/run_cascade_train.sh
 ```
 
-Outputs:
-
-- `out/run_pmt_norag/cascade_PMT_en_1024_best.pth`
-- `out/run_pmt_rag/cascade_PMT_en_1024_best.pth`
-
 ### Evaluation (three protocols)
+
+Eval loads trained weights by protocol: `pmt_norag` from `out/run_pmt_norag/cascade_PMT_en_1024_best.pth`, `pmt_rag` from `out/run_pmt_rag/cascade_PMT_en_1024_best.pth`; `no_pmt` does not load them. Results can be written under `results/` (e.g. `OUT_CSV=results/protocol_eval.csv`).
 
 ```bash
 DATA=dataset/RAG_MedQA_US_test_1273.json \
@@ -422,13 +433,14 @@ pip install -U modelscope
 # Obtain ckpt_a / ckpt_b / ckpt_c (see snapshot_download above)
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
-# One-click: train missing pmt_norag/pmt_rag if needed, evaluate all protocols on
-# default sets (US dev + US test), write results/protocol_benchmark/latest/comparison.csv
+# One-click: train missing pmt_norag/pmt_rag if needed, then eval on US dev + US test.
+# Train default save: out/run_pmt_norag|rag/cascade_PMT_en_1024_best.pth
+# Eval comparison table default: results/protocol_benchmark/latest/comparison.csv
 bash scripts/run_protocol_benchmark.sh
 # Equivalent: python scripts/run_protocol_benchmark.py
 ```
 
-Eval only (checkpoints already present):
+Eval only (best checkpoints already under `out/run_pmt_norag` / `out/run_pmt_rag`):
 
 ```bash
 SKIP_TRAIN=1 bash scripts/run_protocol_benchmark.sh

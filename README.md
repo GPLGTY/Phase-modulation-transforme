@@ -17,7 +17,14 @@ GitHub: https://github.com/GPLGTY/Phase-modulation-transforme
 | `pmt_norag` | 非检索增强上游 → Phase-modulation-transforme | `--protocol pmt_norag` |
 | `pmt_rag` | 检索增强上游 → Phase-modulation-transforme | `--protocol pmt_rag` |
 
-训练与推理自动区分 Phase-modulation-transforme 检查点：训练自 `parameters/sft_PMT_en_1024.pth` 初始化并写入 `out/run_pmt_norag/` 或 `out/run_pmt_rag/`；推理默认加载对应目录下的 `*_best.pth`。评测产物记录最终选项字母与准确率相关字段。
+训练与推理自动区分 Phase-modulation-transforme 检查点。默认路径约定如下：
+
+- **初始化权重（下载 / 预训练产物）**：`parameters/sft_PMT_en_1024.pth`
+- **`pmt_norag` 训练默认保存目录**：`out/run_pmt_norag/`，最佳权重文件名为 `cascade_PMT_en_1024_best.pth`
+- **`pmt_rag` 训练默认保存目录**：`out/run_pmt_rag/`，最佳权重文件名为 `cascade_PMT_en_1024_best.pth`
+- **评测默认加载**：上述对应目录中的 `*_best.pth`（可用环境变量或参数覆盖）
+
+评测产物记录最终选项字母与准确率相关字段。
 
 > 训练默认随机种子为 `1337`；受 GPU 非确定性算子影响，数值结果可能存在可忽略的波动。
 >
@@ -379,6 +386,13 @@ pmt_rag     ：检索增强分支 + Phase-modulation-transforme → 选项字母
 
 ### 训练（按协议分别进行）
 
+默认从 `parameters/sft_PMT_en_1024.pth` 加载初始化权重；不额外指定时，脚本将检查点写到协议对应目录：
+
+- `PROTOCOL=pmt_norag` → 保存到 `out/run_pmt_norag/`，最佳模型为 `out/run_pmt_norag/cascade_PMT_en_1024_best.pth`
+- `PROTOCOL=pmt_rag` → 保存到 `out/run_pmt_rag/`，最佳模型为 `out/run_pmt_rag/cascade_PMT_en_1024_best.pth`
+
+可用环境变量覆盖：`INIT`（初始化权重路径）、`OUT`（输出目录）。
+
 ```bash
 # 默认 NPROC=1。多进程：NPROC=8 PROTOCOL=pmt_norag bash scripts/run_cascade_train.sh
 DATA=dataset/RAG_MedQA_US_train_10178.json \
@@ -387,11 +401,6 @@ DATA=dataset/RAG_MedQA_US_train_10178.json \
 DATA=dataset/RAG_MedQA_US_train_10178.json \
   PROTOCOL=pmt_rag bash scripts/run_cascade_train.sh
 ```
-
-输出：
-
-- `out/run_pmt_norag/cascade_PMT_en_1024_best.pth`
-- `out/run_pmt_rag/cascade_PMT_en_1024_best.pth`
 
 等价 Python：
 
@@ -408,6 +417,8 @@ python trainer/train_cascade_pmt.py \
 > 说明：每个 DDP rank 均会加载对应上游模块；大规模部署优先单进程配合 vLLM 张量并行或 `device_map=auto`。
 
 ### 评测（三条对照）
+
+评测时默认按协议读取训练产物：`pmt_norag` 使用 `out/run_pmt_norag/cascade_PMT_en_1024_best.pth`，`pmt_rag` 使用 `out/run_pmt_rag/cascade_PMT_en_1024_best.pth`；`no_pmt` 不加载该权重。结果默认可写到 `results/`（例如 `OUT_CSV=results/protocol_eval.csv`）。
 
 ```bash
 # 一次跑完三条协议并分别报告准确率（自动选择 Phase-modulation-transforme 检查点）
@@ -443,13 +454,14 @@ pip install -U modelscope
 # 获取 ckpt_a / ckpt_b / ckpt_c（见上文 snapshot_download）
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
-# 一键：缺权重则先训练 pmt_norag/pmt_rag，再在默认测试集（US dev + US test）上评测三条协议，
-# 输出准确率对比表 results/protocol_benchmark/latest/comparison.csv
+# 一键：缺权重则先训练 pmt_norag/pmt_rag，再在默认测试集（US dev + US test）上评测三条协议。
+# 训练默认保存：out/run_pmt_norag|rag/cascade_PMT_en_1024_best.pth
+# 评测对比表默认：results/protocol_benchmark/latest/comparison.csv
 bash scripts/run_protocol_benchmark.sh
 # 等价：python scripts/run_protocol_benchmark.py
 ```
 
-仅评测（已有 `out/run_pmt_norag` / `out/run_pmt_rag`）：
+仅评测（已有默认目录 `out/run_pmt_norag` / `out/run_pmt_rag` 下的最佳权重）：
 
 ```bash
 SKIP_TRAIN=1 bash scripts/run_protocol_benchmark.sh
