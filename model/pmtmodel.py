@@ -386,8 +386,8 @@ class PMTBlock(nn.Module):
         return x, h_imag, past_kv
 
 
-# 增强版 PhaseModulationTransforme 模型（张量化版本，消除 graph break）/ Enhanced PhaseModulationTransforme model (tensorized version, eliminates graph break)
-class PhaseModulationTransforme(PreTrainedModel, GenerationMixin):
+# 增强版 PhaseModulationTransformer 模型（张量化版本，消除 graph break）/ Enhanced PhaseModulationTransformer model (tensorized version, eliminates graph break)
+class PhaseModulationTransformer(PreTrainedModel, GenerationMixin):
     config_class = PMTConfig
 
     def __init__(self, params: PMTConfig, **kwargs):

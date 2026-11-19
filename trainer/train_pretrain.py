@@ -19,7 +19,7 @@ from transformers import LlamaTokenizerFast
 from model.PMTConfig import PMTConfig
 
 from model.model import MiniMindForCausalLM
-from model.pmtmodel import PhaseModulationTransforme
+from model.pmtmodel import PhaseModulationTransformer
 from dataset.lm_zh_dataset import PretrainDataset as PretrainDatasetZh
 from dataset.lm_en_dataset import PretrainDataset as PretrainDatasetEn
 import torch._inductor.config as cfg
@@ -320,7 +320,7 @@ def init_model(lm_config, model_type, language):
 
     # Choose model based on model_type
     if model_type == "PMT":
-        model = PhaseModulationTransforme(lm_config).to(args.device)
+        model = PhaseModulationTransformer(lm_config).to(args.device)
     else:  # MM
         model = MiniMindForCausalLM(lm_config).to(args.device)
 

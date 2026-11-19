@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Cascade train: protocol-specific PhaseModulationTransforme SFT (online upstream context).
+"""Cascade train: protocol-specific PhaseModulationTransformer SFT (online upstream context).
 
 Protocols:
-  pmt_norag — non-retrieval branch + PhaseModulationTransforme → out/run_pmt_norag/
-  pmt_rag   — retrieval-augmented branch + PhaseModulationTransforme → out/run_pmt_rag/
+  pmt_norag — non-retrieval branch + PhaseModulationTransformer → out/run_pmt_norag/
+  pmt_rag   — retrieval-augmented branch + PhaseModulationTransformer → out/run_pmt_rag/
 
-Training always initializes from the released pretrained PhaseModulationTransforme weights.
+Training always initializes from the released pretrained PhaseModulationTransformer weights.
 Inference must load the protocol-trained *_best.pth (see inference_cascade_pmt.py).
 Upstream intermediate text is never written to disk.
 """
@@ -29,7 +29,7 @@ __package__ = "trainer"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from model.PMTConfig import PMTConfig
-from model.pmtmodel import PhaseModulationTransforme
+from model.pmtmodel import PhaseModulationTransformer
 from model.pmt_protocol import (
     PROTOCOL_PMT_NORAG,
     PROTOCOL_PMT_RAG,
@@ -98,12 +98,12 @@ def masked_ce(logits, y, mask) -> torch.Tensor:
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Protocol-specific cascade PhaseModulationTransforme SFT")
+    p = argparse.ArgumentParser(description="Protocol-specific cascade PhaseModulationTransformer SFT")
     p.add_argument(
         "--protocol",
         choices=(PROTOCOL_PMT_NORAG, PROTOCOL_PMT_RAG),
         required=True,
-        help="pmt_norag or pmt_rag (separate PhaseModulationTransforme checkpoints)",
+        help="pmt_norag or pmt_rag (separate PhaseModulationTransformer checkpoints)",
     )
     p.add_argument(
         "--out_dir",
@@ -115,7 +115,7 @@ def parse_args():
         "--init_ckpt",
         type=str,
         default="",
-        help="default: parameters/sft_PMT_en_1024.pth (released pretrained PhaseModulationTransforme)",
+        help="default: parameters/sft_PMT_en_1024.pth (released pretrained PhaseModulationTransformer)",
     )
     p.add_argument("--data_path", type=str, required=True, help="JSON list with question_with_options + answer_idx")
     p.add_argument("--epochs", type=int, default=1)
@@ -204,8 +204,8 @@ def main():
         max_seq_len=args.max_seq_len,
         flash_attn=True,
     )
-    model = PhaseModulationTransforme(lm_config)
-    Logger(f"load PhaseModulationTransforme init (train) ← {init_ckpt}")
+    model = PhaseModulationTransformer(lm_config)
+    Logger(f"load PhaseModulationTransformer init (train) ← {init_ckpt}")
     state = torch.load(str(init_ckpt), map_location="cpu")
     model.load_state_dict(state, strict=False)
     model = model.to(device)

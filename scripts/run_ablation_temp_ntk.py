@@ -40,7 +40,7 @@ from inference import (
     resolve_extracted_choice,
 )
 from model.PMTConfig import PMTConfig
-from model.pmtmodel import PhaseModulationTransforme
+from model.pmtmodel import PhaseModulationTransformer
 
 CSV_FIELDS = [
     "id",
@@ -70,7 +70,7 @@ def _param_tag(name: str, value: float) -> str:
 
 
 def apply_ablation_settings(
-    model: PhaseModulationTransforme,
+    model: PhaseModulationTransformer,
     temperature: float,
     ntk_alpha: float,
     ntk_max_train_len: int,
@@ -104,7 +104,7 @@ def load_model_and_tokenizer(args, device: torch.device):
     tokenizer.truncation_side = "left"
     tokenizer.padding_side = "left"
 
-    model = PhaseModulationTransforme(lm_config)
+    model = PhaseModulationTransformer(lm_config)
     state = torch.load(args.checkpoint, map_location="cpu")
     model.load_state_dict(state, strict=False)
     model = model.to(device)
@@ -293,7 +293,7 @@ def _infer_batch(
 
 
 def run_one_combo(
-    model: PhaseModulationTransforme,
+    model: PhaseModulationTransformer,
     tokenizer: LlamaTokenizerFast,
     data: list,
     args,

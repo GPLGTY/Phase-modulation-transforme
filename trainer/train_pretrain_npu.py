@@ -21,7 +21,7 @@ from transformers import LlamaTokenizerFast
 from model.PMTConfig import PMTConfig
 
 from model.model import MiniMindForCausalLM
-from model.pmtmodel import PhaseModulationTransforme
+from model.pmtmodel import PhaseModulationTransformer
 from dataset.lm_zh_dataset import PretrainDataset as PretrainDatasetZh
 from dataset.lm_en_dataset import PretrainDataset as PretrainDatasetEn
 import numpy as np
@@ -347,7 +347,7 @@ def init_model(lm_config, args):
 
     Logger(f"Initializing model type: {args.model_type}")
     if args.model_type == "PMT":
-        model = PhaseModulationTransforme(lm_config)
+        model = PhaseModulationTransformer(lm_config)
     else:  # MM
         model = MiniMindForCausalLM(lm_config)
 
@@ -432,7 +432,7 @@ def print_training_summary(args, lm_config, model_params, device_info, total_sta
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="PhaseModulationTransforme/MiniMind Pretraining on NPU"
+        description="PhaseModulationTransformer/MiniMind Pretraining on NPU"
     )
     parser.add_argument("--out_dir", type=str, default="out_qf10")
     parser.add_argument("--epochs", type=int, default=6)
@@ -469,7 +469,7 @@ if __name__ == "__main__":
         type=str,
         default="PMT",
         choices=["PMT", "MM"],
-        help="Model type: PMT (PhaseModulationTransforme) or MM (MiniMind)",
+        help="Model type: PMT (PhaseModulationTransformer) or MM (MiniMind)",
     )
     parser.add_argument(
         "--language",

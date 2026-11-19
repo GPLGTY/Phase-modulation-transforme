@@ -52,7 +52,7 @@ import logging
 
 from model.PMTConfig import PMTConfig
 from model.model import MiniMindForCausalLM
-from model.pmtmodel import PhaseModulationTransforme
+from model.pmtmodel import PhaseModulationTransformer
 from dataset.lm_en_dataset import SFTIntentMessagesDataset
 from inference import format_inst_prompt_sft, merge_system_and_user_body
 
@@ -475,7 +475,7 @@ def init_model(lm_config, model_type: str, language: str, init_ckpt: str):
     tokenizer = LlamaTokenizerFast.from_pretrained(str(tok_dir))
 
     if model_type == "PMT":
-        model = PhaseModulationTransforme(lm_config)
+        model = PhaseModulationTransformer(lm_config)
     else:
         model = MiniMindForCausalLM(lm_config)
 
@@ -570,7 +570,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--dtype", type=str, default="bfloat16", choices=["bfloat16", "float16", "float32"])
     parser.add_argument("--use_wandb", action="store_true")
-    parser.add_argument("--wandb_project", type=str, default="PhaseModulationTransforme-SFT-Intent")
+    parser.add_argument("--wandb_project", type=str, default="PhaseModulationTransformer-SFT-Intent")
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--ddp", action="store_true")
     parser.add_argument("--grad_clip", type=float, default=1.0)

@@ -1,4 +1,4 @@
-﻿# Phase-modulation-transforme
+﻿# Phase-modulation-transformer
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
@@ -7,17 +7,17 @@ English: [README_EN.md](README_EN.md)
 
 GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 
-本仓库发布相位调制检索增强 Transformer（Phase-Modulation Retrieval-Augmented Transformer）于 MedQA 医学选择题问答任务上的完整实验协议，包括实现代码、数据构建脚本与参考评测结果。所附 Phase-modulation-transforme 检查点业已经过预训练；使用者基于该初始化权重开展指令微调（SFT）与评测，无需自行预训练。体量较大的模型检查点、语料与 Embedding 资源托管于 ModelScope（见下文及 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)）。
+本仓库发布相位调制检索增强 Transformer（Phase-Modulation Retrieval-Augmented Transformer）于 MedQA 医学选择题问答任务上的完整实验协议，包括实现代码、数据构建脚本与参考评测结果。所附 Phase-modulation-transformer 检查点业已经过预训练；使用者基于该初始化权重开展指令微调（SFT）与评测，无需自行预训练。体量较大的模型检查点、语料与 Embedding 资源托管于 ModelScope（见下文及 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)）。
 
 本仓库提供三条对照评测协议（均输出选项字母并与标准答案比对、报告准确率）：
 
 | 协议 | 含义 | 入口 |
 |------|------|------|
-| `no_pmt` | 仅上游模块完成选项预测（不经 Phase-modulation-transforme） | `--protocol no_pmt` |
-| `pmt_norag` | 非检索增强上游 → Phase-modulation-transforme | `--protocol pmt_norag` |
-| `pmt_rag` | 检索增强上游 → Phase-modulation-transforme | `--protocol pmt_rag` |
+| `no_pmt` | 仅上游模块完成选项预测（不经 Phase-modulation-transformer） | `--protocol no_pmt` |
+| `pmt_norag` | 非检索增强上游 → Phase-modulation-transformer | `--protocol pmt_norag` |
+| `pmt_rag` | 检索增强上游 → Phase-modulation-transformer | `--protocol pmt_rag` |
 
-训练与推理自动区分 Phase-modulation-transforme 检查点。默认路径约定如下：
+训练与推理自动区分 Phase-modulation-transformer 检查点。默认路径约定如下：
 
 - **初始化权重（下载 / 预训练产物）**：`parameters/sft_PMT_en_1024.pth`
 - **`pmt_norag` 训练默认保存目录**：`out/run_pmt_norag/`，最佳权重文件名为 `cascade_PMT_en_1024_best.pth`
@@ -33,7 +33,7 @@ GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 ## 环境与依赖
 
 ```bash
-cd Phase-modulation-transforme
+cd Phase-modulation-transformer
 pip install -r requirements.txt
 ```
 
@@ -91,7 +91,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 
 亦可在 ModelScope 页面按目录手动获取。分支路由见 `model/sidecar_map.json`（由 `--protocol` 选择加载）。
 
-另需预训练后的 Phase-modulation-transforme 初始化权重（归档包 `01` 中的 `parameters/sft_PMT_en_1024.pth`），以及含 `question_with_options`、`answer_idx` 的样本 JSON（可含检索相关字段）。
+另需预训练后的 Phase-modulation-transformer 初始化权重（归档包 `01` 中的 `parameters/sft_PMT_en_1024.pth`），以及含 `question_with_options`、`answer_idx` 的样本 JSON（可含检索相关字段）。
 
 ### 归档包（`.tar`）批量获取
 
@@ -100,7 +100,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 ```bash
 pip install -U modelscope
 
-# Phase-modulation-transforme 初始化权重 + MedQA 检索样本
+# Phase-modulation-transformer 初始化权重 + MedQA 检索样本
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
 # 检索重建：Embedding + 教材 + FAISS + 原始题目（含英文）
@@ -116,7 +116,7 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 | `parameters/ckpt_a` | `parameters/ckpt_a/` | 级联上游模块 slot 0 |
 | `parameters/ckpt_b` | `parameters/ckpt_b/` | 级联上游模块 slot 1 |
 | `parameters/ckpt_c` | `parameters/ckpt_c/` | `no_pmt` 协议上游模块 |
-| `01_parameters.tar` | `parameters/PMT_*`、`parameters/MiniMind_*`、`parameters/sft_PMT_en_1024.pth` | 预训练后的 Phase-modulation-transforme（Hugging Face 与 SFT 初始化检查点） |
+| `01_parameters.tar` | `parameters/PMT_Base_300M/`、`parameters/pretrain_PMT_en_1024_final.pth`（或由 Base 转换）、`parameters/sft_PMT_en_1024.pth` | Phase-modulation-transformer 预训练权重与通用 SFT / 级联初始化检查点 |
 | `03b_corpus_openhermes2_5.tar` | `dataset/openhermes2_5.jsonl` | 英文通用指令微调语料 |
 | `03d_corpus_sft_mini_512_zh.tar` | `dataset/sft_mini_512_zh.jsonl` | 中文指令微调语料（可选） |
 | `04_medqa_rag_json.tar` | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA 检索样本（`generate_question_with_knowledges.py` 口径） |
@@ -135,8 +135,8 @@ bash scripts/run_protocol_benchmark.sh
 ## 仓库结构
 
 ```
-Phase-modulation-transforme/
-├── model/                 # Phase-modulation-transforme 与上游模块路由 / 提示配置
+Phase-modulation-transformer/
+├── model/                 # Phase-modulation-transformer 与上游模块路由 / 提示配置
 ├── trainer/               # 通用 SFT、级联训练
 ├── inference_cascade_pmt.py
 ├── tools/                 # 权重格式转换与长度外推
@@ -149,7 +149,7 @@ Phase-modulation-transforme/
 │   ├── ckpt_a/            # 级联上游模块 slot 0
 │   ├── ckpt_b/            # 级联上游模块 slot 1
 │   ├── ckpt_c/            # no_pmt 协议上游模块
-│   └── sft_PMT_en_1024.pth # 预训练后的 Phase-modulation-transforme（训练初始化）
+│   └── sft_PMT_en_1024.pth # 预训练后的 Phase-modulation-transformer（训练初始化）
 ├── out/run_pmt_norag/ # pmt_norag 训练检查点
 ├── out/run_pmt_rag/   # pmt_rag 训练检查点
 ├── results/
@@ -328,26 +328,37 @@ python generate_question_with_knowledges.py \
 
 ### 检查点路径（ModelScope 解压后）
 
-执行 `PACKS="01"` / `PACKS="02"` 或全量下载后，主要路径如下：
+执行 `PACKS="01"` 或全量下载后，与通用 SFT / 级联相关的路径如下：
 
 | 路径 | 说明 | 包 |
 |------|------|-----|
-| `parameters/PMT_Base_300M/pytorch_model.bin` | QF Base | `01` |
-| `parameters/PMT_Struct_300M/pytorch_model.bin` | QF Struct | `01` |
-| `parameters/MiniMind_Base_300M/pytorch_model.bin` | MiniMind Base | `01` |
-| `parameters/MiniMind_Struct_300M/pytorch_model.bin` | MiniMind Struct | `01` |
-| `parameters/sft_PMT_en_1024.pth` | 预训练后的 Phase-modulation-transforme（SFT / 级联初始化） | `01` |
+| `parameters/PMT_Base_300M/` | Phase-modulation-transformer **预训练**权重（Hugging Face）；自行跑 `train_full_sft.py` 时的前置模型 | `01` |
+| `parameters/pretrain_PMT_en_1024_final.pth` | 同上，Torch 格式；`train_full_sft.py` **实际加载**此文件（可由 `PMT_Base_300M` 经 `tools/convert_model.py` 转换得到） | `01` 或本地转换 |
+| `parameters/sft_PMT_en_1024.pth` | 通用指令微调产物；级联协议训练的默认初始化权重 | `01` 或本地 SFT |
 
-包 `01` 中的 Phase-modulation-transforme 权重可直接作为 SFT 起点；SFT 产物亦可按下文协议自行得到。
+若包中已有 `sft_PMT_en_1024.pth`，可跳过通用 SFT，直接做对照协议训练。
 
 ## 通用指令微调（可选）
 
 若已获取 `parameters/sft_PMT_en_1024.pth`，可跳过本节，直接进入对照协议训练 / 评测。
 
+**加载**：`parameters/pretrain_PMT_en_1024_final.pth`（对应 `PMT_Base_300M`）。若只有 HF 目录，先转换：
+
+```bash
+python tools/convert_model.py --mode transformers2torch \
+  --transformers_path parameters/PMT_Base_300M \
+  --torch_path parameters/pretrain_PMT_en_1024_final.pth \
+  --model_type PMT --language en \
+  --hidden_size 1024 --num_hidden_layers 24 \
+  --num_attention_heads 8 --num_key_value_heads 2 --max_seq_len 1024
+```
+
+再训练：
+
 ```bash
 cd trainer
 python train_full_sft.py \
-    --model_type QF \
+    --model_type PMT \
     --language en \
     --hidden_size 1024 \
     --num_hidden_layers 24 \
@@ -364,24 +375,22 @@ python train_full_sft.py \
 
 得到 `parameters/sft_PMT_en_1024.pth`。中文设置 `--language zh`，语料为 `../dataset/sft_mini_512_zh.jsonl`。
 
-亦可自 Hugging Face 目录导出：`bash scripts/export_stage1_from_hf.sh`。
-
 ## 对照协议：训练与评测
 
 ```text
 no_pmt      ：独立上游 → 选项字母 → 准确率
-pmt_norag   ：非检索分支 + Phase-modulation-transforme → 选项字母 → 准确率
-pmt_rag     ：检索增强分支 + Phase-modulation-transforme → 选项字母 → 准确率
+pmt_norag   ：非检索分支 + Phase-modulation-transformer → 选项字母 → 准确率
+pmt_rag     ：检索增强分支 + Phase-modulation-transformer → 选项字母 → 准确率
 ```
 
 - 训练：`trainer/train_cascade_pmt.py --protocol pmt_norag|pmt_rag`（自动加载预训练初始化权重）
-- 评测：`inference_cascade_pmt.py --protocol no_pmt|pmt_norag|pmt_rag|all`（含 Phase-modulation-transforme 时自动加载对应 `*_best.pth`）
+- 评测：`inference_cascade_pmt.py --protocol no_pmt|pmt_norag|pmt_rag|all`（含 Phase-modulation-transformer 时自动加载对应 `*_best.pth`）
 - 路由：`model/sidecar_map.json`、`model/pmt_protocol.py`、`model/sidecar_runtime.py`
 
 ### 前置条件
 
 1. 获取 `parameters/ckpt_a`、`parameters/ckpt_b`、`parameters/ckpt_c`（见 ModelScope 一节）
-2. 获取 Phase-modulation-transforme 初始化权重：`PACKS="01" bash scripts/download_modelscope_assets.sh`
+2. 获取 Phase-modulation-transformer 初始化权重：`PACKS="01" bash scripts/download_modelscope_assets.sh`
 3. 准备样本 JSON（归档包 `04`，或检索增强后的题目 JSON）
 
 ### 训练（按协议分别进行）
@@ -421,7 +430,7 @@ python trainer/train_cascade_pmt.py \
 评测时默认按协议读取训练产物：`pmt_norag` 使用 `out/run_pmt_norag/cascade_PMT_en_1024_best.pth`，`pmt_rag` 使用 `out/run_pmt_rag/cascade_PMT_en_1024_best.pth`；`no_pmt` 不加载该权重。结果默认可写到 `results/`（例如 `OUT_CSV=results/protocol_eval.csv`）。
 
 ```bash
-# 一次跑完三条协议并分别报告准确率（自动选择 Phase-modulation-transforme 检查点）
+# 一次跑完三条协议并分别报告准确率（自动选择 Phase-modulation-transformer 检查点）
 DATA=dataset/RAG_MedQA_US_test_1273.json \
 PROTOCOL=all OUT_CSV=results/protocol_eval.csv \
   bash scripts/run_cascade_infer.sh

@@ -1,4 +1,4 @@
-﻿# Phase-modulation-transforme
+﻿# Phase-modulation-transformer
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
@@ -7,17 +7,17 @@
 
 GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 
-This repository releases the complete experimental protocol for a Phase-Modulation Retrieval-Augmented Transformer on MedQA multiple-choice medical question answering, including implementation code, data-construction scripts, and reference evaluation results. Released Phase-modulation-transforme checkpoints are already pretrained; users start from these weights for supervised fine-tuning (SFT) and evaluation, and need not run pretraining. Large model checkpoints, corpora, and embedding resources are hosted on ModelScope (see below and [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)).
+This repository releases the complete experimental protocol for a Phase-Modulation Retrieval-Augmented Transformer on MedQA multiple-choice medical question answering, including implementation code, data-construction scripts, and reference evaluation results. Released Phase-modulation-transformer checkpoints are already pretrained; users start from these weights for supervised fine-tuning (SFT) and evaluation, and need not run pretraining. Large model checkpoints, corpora, and embedding resources are hosted on ModelScope (see below and [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)).
 
 Three contrastive evaluation protocols are provided (each predicts an option letter, compares it with the gold label, and reports accuracy):
 
 | Protocol | Description | Entry |
 |----------|-------------|-------|
-| `no_pmt` | Upstream only (no Phase-modulation-transforme) | `--protocol no_pmt` |
-| `pmt_norag` | Non-retrieval upstream → Phase-modulation-transforme | `--protocol pmt_norag` |
-| `pmt_rag` | Retrieval-augmented upstream → Phase-modulation-transforme | `--protocol pmt_rag` |
+| `no_pmt` | Upstream only (no Phase-modulation-transformer) | `--protocol no_pmt` |
+| `pmt_norag` | Non-retrieval upstream → Phase-modulation-transformer | `--protocol pmt_norag` |
+| `pmt_rag` | Retrieval-augmented upstream → Phase-modulation-transformer | `--protocol pmt_rag` |
 
-Training and inference automatically resolve distinct Phase-modulation-transforme checkpoints. Default paths:
+Training and inference automatically resolve distinct Phase-modulation-transformer checkpoints. Default paths:
 
 - **Init weights (download / pretrain output)**: `parameters/sft_PMT_en_1024.pth`
 - **`pmt_norag` train default save dir**: `out/run_pmt_norag/`, best checkpoint `cascade_PMT_en_1024_best.pth`
@@ -33,7 +33,7 @@ Evaluation artifacts record the final option letter and accuracy-related fields.
 ## Environment and dependencies
 
 ```bash
-cd Phase-modulation-transforme
+cd Phase-modulation-transformer
 pip install -r requirements.txt
 ```
 
@@ -91,7 +91,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 
 Directories may also be obtained manually from the ModelScope page. Branch routing is defined in `model/sidecar_map.json` and selected via `--protocol`.
 
-Also required: Phase-modulation-transforme initialization weights (`parameters/sft_PMT_en_1024.pth` in pack `01`) and sample JSON with `question_with_options` and `answer_idx` (retrieval fields optional).
+Also required: Phase-modulation-transformer initialization weights (`parameters/sft_PMT_en_1024.pth` in pack `01`) and sample JSON with `question_with_options` and `answer_idx` (retrieval fields optional).
 
 ### Batch retrieval of archive packs (`.tar`)
 
@@ -100,7 +100,7 @@ From the **project root** (extracts into the conventional `parameters/`, `out/`,
 ```bash
 pip install -U modelscope
 
-# Phase-modulation-transforme init weights + MedQA retrieval samples
+# Phase-modulation-transformer init weights + MedQA retrieval samples
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
 # Retrieval rebuild: embeddings + textbooks + FAISS + raw questions (includes English)
@@ -116,7 +116,7 @@ Alternatively, download `.tar` files from ModelScope and run `tar -xf <pack>.tar
 | `parameters/ckpt_a` | `parameters/ckpt_a/` | Cascade upstream module, slot 0 |
 | `parameters/ckpt_b` | `parameters/ckpt_b/` | Cascade upstream module, slot 1 |
 | `parameters/ckpt_c` | `parameters/ckpt_c/` | Upstream module for protocol `no_pmt` |
-| `01_parameters.tar` | `parameters/PMT_*`, `parameters/MiniMind_*`, `parameters/sft_PMT_en_1024.pth` | Pretrained Phase-modulation-transforme (Hugging Face and SFT initialization checkpoints) |
+| `01_parameters.tar` | `parameters/PMT_Base_300M/`, `parameters/pretrain_PMT_en_1024_final.pth` (or converted from Base), `parameters/sft_PMT_en_1024.pth` | Phase-modulation-transformer pretrain weights and general-SFT / cascade init checkpoint |
 | `03b_corpus_openhermes2_5.tar` | `dataset/openhermes2_5.jsonl` | English general instruction corpus |
 | `03d_corpus_sft_mini_512_zh.tar` | `dataset/sft_mini_512_zh.jsonl` | Chinese instruction corpus (optional) |
 | `04_medqa_rag_json.tar` | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA retrieval samples (`generate_question_with_knowledges.py` schema) |
@@ -135,8 +135,8 @@ bash scripts/run_protocol_benchmark.sh
 ## Repository layout
 
 ```
-Phase-modulation-transforme/
-├── model/                 # Phase-modulation-transforme and upstream routing / prompt config
+Phase-modulation-transformer/
+├── model/                 # Phase-modulation-transformer and upstream routing / prompt config
 ├── trainer/               # General SFT, cascade training
 ├── inference_cascade_pmt.py
 ├── tools/                 # Checkpoint format conversion and length extrapolation
@@ -149,7 +149,7 @@ Phase-modulation-transforme/
 │   ├── ckpt_a/            # Cascade upstream module, slot 0
 │   ├── ckpt_b/            # Cascade upstream module, slot 1
 │   ├── ckpt_c/            # no_pmt upstream module
-│   └── sft_PMT_en_1024.pth # Pretrained Phase-modulation-transforme (train init)
+│   └── sft_PMT_en_1024.pth # Pretrained Phase-modulation-transformer (train init)
 ├── out/run_pmt_norag/ # pmt_norag checkpoints
 ├── out/run_pmt_rag/   # pmt_rag checkpoints
 ├── results/
@@ -328,26 +328,37 @@ After retrieval augmentation, proceed to **Online cascade training and inference
 
 ### Checkpoint paths (after ModelScope extraction)
 
-After `PACKS="01"` / `PACKS="02"` or a full download:
+After `PACKS="01"` or a full download, paths relevant to general SFT / cascade:
 
 | Path | Description | Pack |
 |------|-------------|------|
-| `parameters/PMT_Base_300M/pytorch_model.bin` | QF Base | `01` |
-| `parameters/PMT_Struct_300M/pytorch_model.bin` | QF Struct | `01` |
-| `parameters/MiniMind_Base_300M/pytorch_model.bin` | MiniMind Base | `01` |
-| `parameters/MiniMind_Struct_300M/pytorch_model.bin` | MiniMind Struct | `01` |
-| `parameters/sft_PMT_en_1024.pth` | Pretrained Phase-modulation-transforme (SFT / cascade initialization) | `01` |
+| `parameters/PMT_Base_300M/` | Phase-modulation-transformer **pretrain** weights (Hugging Face); prerequisite if you run `train_full_sft.py` yourself | `01` |
+| `parameters/pretrain_PMT_en_1024_final.pth` | Same weights in Torch form; what `train_full_sft.py` **actually loads** (convertible from `PMT_Base_300M` via `tools/convert_model.py`) | `01` or local convert |
+| `parameters/sft_PMT_en_1024.pth` | General instruction-tuning output; default init for cascade protocol training | `01` or local SFT |
 
-Phase-modulation-transforme weights in pack `01` are the intended SFT starting point; SFT outputs may also be obtained under the protocols below.
+If `sft_PMT_en_1024.pth` is already in the pack, skip general SFT and go to protocol training.
 
 ## General instruction tuning (optional)
 
 If `parameters/sft_PMT_en_1024.pth` is already available, skip this section and proceed to protocol training / evaluation.
 
+**Loads**: `parameters/pretrain_PMT_en_1024_final.pth` (same stage as `PMT_Base_300M`). If you only have the HF folder, convert first:
+
+```bash
+python tools/convert_model.py --mode transformers2torch \
+  --transformers_path parameters/PMT_Base_300M \
+  --torch_path parameters/pretrain_PMT_en_1024_final.pth \
+  --model_type PMT --language en \
+  --hidden_size 1024 --num_hidden_layers 24 \
+  --num_attention_heads 8 --num_key_value_heads 2 --max_seq_len 1024
+```
+
+Then train:
+
 ```bash
 cd trainer
 python train_full_sft.py \
-    --model_type QF \
+    --model_type PMT \
     --language en \
     --hidden_size 1024 \
     --num_hidden_layers 24 \
@@ -364,24 +375,22 @@ python train_full_sft.py \
 
 Produces `parameters/sft_PMT_en_1024.pth`. For Chinese, set `--language zh` with `../dataset/sft_mini_512_zh.jsonl`.
 
-Export from a Hugging Face directory: `bash scripts/export_stage1_from_hf.sh`.
-
 ## Contrastive protocols: training and evaluation
 
 ```text
 no_pmt      : standalone upstream → option letter → accuracy
-pmt_norag   : non-retrieval branch + Phase-modulation-transforme → option letter → accuracy
-pmt_rag     : retrieval-augmented branch + Phase-modulation-transforme → option letter → accuracy
+pmt_norag   : non-retrieval branch + Phase-modulation-transformer → option letter → accuracy
+pmt_rag     : retrieval-augmented branch + Phase-modulation-transformer → option letter → accuracy
 ```
 
 - Training: `trainer/train_cascade_pmt.py --protocol pmt_norag|pmt_rag` (auto-loads pretrained init weights)
-- Evaluation: `inference_cascade_pmt.py --protocol no_pmt|pmt_norag|pmt_rag|all` (auto-loads protocol `*_best.pth` when Phase-modulation-transforme is used)
+- Evaluation: `inference_cascade_pmt.py --protocol no_pmt|pmt_norag|pmt_rag|all` (auto-loads protocol `*_best.pth` when Phase-modulation-transformer is used)
 - Routing: `model/sidecar_map.json`, `model/pmt_protocol.py`, `model/sidecar_runtime.py`
 
 ### Prerequisites
 
 1. Obtain `parameters/ckpt_a`, `parameters/ckpt_b`, `parameters/ckpt_c` (ModelScope section)
-2. Obtain Phase-modulation-transforme initialization weights: `PACKS="01" bash scripts/download_modelscope_assets.sh`
+2. Obtain Phase-modulation-transformer initialization weights: `PACKS="01" bash scripts/download_modelscope_assets.sh`
 3. Prepare sample JSON (pack `04`, or retrieval-augmented item JSON)
 
 ### Training (per protocol)

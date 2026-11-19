@@ -2,8 +2,8 @@
 Model conversion script: convert between torch format (state_dict) and HuggingFace Transformers format.
 模型转换脚本：在 torch 格式（state_dict）与 HuggingFace Transformers 格式之间转换。
 
-Supports two model types: PMT (PhaseModulationTransforme) and MM (MiniMindForCausalLM).
-支持两种模型类型：QF（PhaseModulationTransforme）和 MM（MiniMindForCausalLM）。
+Supports two model types: PMT (PhaseModulationTransformer) and MM (MiniMindForCausalLM).
+支持两种模型类型：QF（PhaseModulationTransformer）和 MM（MiniMindForCausalLM）。
 
 Supports two languages: zh (Chinese) and en (English), which affect tokenizer and vocabulary size.
 支持两种语言：zh（中文）和 en（英文），影响分词器与词汇表大小。
@@ -21,7 +21,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from transformers import LlamaTokenizerFast, AutoModelForCausalLM, AutoTokenizer
 from model.PMTConfig import PMTConfig
 from model.model import MiniMindForCausalLM
-from model.pmtmodel import PhaseModulationTransforme
+from model.pmtmodel import PhaseModulationTransformer
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -63,10 +63,10 @@ def convert_torch2transformers(
     """
     # Instantiate model based on model_type / 根据模型类型实例化模型
     if model_type == "PMT":
-        # Register PhaseModulationTransforme for auto classes / 注册 PhaseModulationTransforme 到自动类
+        # Register PhaseModulationTransformer for auto classes / 注册 PhaseModulationTransformer 到自动类
         PMTConfig.register_for_auto_class()
-        PhaseModulationTransforme.register_for_auto_class("AutoModelForCausalLM")
-        model = PhaseModulationTransforme(lm_config)
+        PhaseModulationTransformer.register_for_auto_class("AutoModelForCausalLM")
+        model = PhaseModulationTransformer(lm_config)
     else:  # MM
         # Register MiniMindForCausalLM for auto classes / 注册 MiniMindForCausalLM 到自动类
         PMTConfig.register_for_auto_class()  # Using PMTConfig for MM as well / MM 也使用 PMTConfig
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         type=str,
         default="MM",
         choices=["PMT", "MM"],
-        help="Model type: PMT (PhaseModulationTransforme) or MM (MiniMindForCausalLM)",
+        help="Model type: PMT (PhaseModulationTransformer) or MM (MiniMindForCausalLM)",
     )
     parser.add_argument(
         "--language",

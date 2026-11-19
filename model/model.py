@@ -183,7 +183,7 @@ class FeedForward(nn.Module):
 
 
 # Transformer块 | Transformer block
-class PhaseModulationTransformeBlock(nn.Module):
+class PhaseModulationTransformerBlock(nn.Module):
     def __init__(self, layer_id: int, config: PMTConfig):
         super().__init__()
         self.n_heads = config.n_heads
@@ -221,7 +221,7 @@ class MiniMindForCausalLM(PreTrainedModel, GenerationMixin):
         self.tok_embeddings = nn.Embedding(params.vocab_size, params.dim)
         self.dropout = nn.Dropout(params.dropout)
         self.layers = nn.ModuleList(
-            [PhaseModulationTransformeBlock(l, params) for l in range(self.n_layers)]
+            [PhaseModulationTransformerBlock(l, params) for l in range(self.n_layers)]
         )
         self.norm = RMSNorm(params.dim, eps=params.norm_eps)
         self.output = nn.Linear(params.dim, params.vocab_size, bias=False)

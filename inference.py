@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-使用 PhaseModulationTransforme（默认 **PMT_Struct_300M** 指令微调权重）对 MedQA RAG JSON 批量推理并写入 CSV。
+使用 PhaseModulationTransformer（默认 **PMT_Struct_300M** 指令微调权重）对 MedQA RAG JSON 批量推理并写入 CSV。
 
 **模型选择（与任务匹配）**
 - **PMT_Struct_300M / MiniMind_Struct_300M**：指令微调，适合 `[INST]` + 选项指令，能稳定产出可读续写。

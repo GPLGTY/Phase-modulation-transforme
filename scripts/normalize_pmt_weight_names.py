@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rename pack-01 weight paths to Phase-modulation-transforme branding."""
+"""Rename pack-01 weight paths to Phase-modulation-transformer branding."""
 
 from __future__ import annotations
 

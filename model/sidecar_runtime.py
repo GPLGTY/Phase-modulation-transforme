@@ -295,7 +295,7 @@ class SidecarPool:
     ) -> tuple[str, str, str]:
         """Cascade path: return (slot, cleaned_context, system_prompt).
 
-        Intermediate upstream text is for in-memory PhaseModulationTransforme input only;
+        Intermediate upstream text is for in-memory PhaseModulationTransformer input only;
         callers must not persist or print it.
         """
         slot = str(force_slot) if force_slot is not None else select_slot(sample, self.cfg)

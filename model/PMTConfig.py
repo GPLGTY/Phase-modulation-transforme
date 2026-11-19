@@ -3,7 +3,7 @@ from typing import List
 
 
 class PMTConfig(PretrainedConfig):
-    model_type = "PhaseModulationTransforme"
+    model_type = "PhaseModulationTransformer"
 
     def __init__(
         self,

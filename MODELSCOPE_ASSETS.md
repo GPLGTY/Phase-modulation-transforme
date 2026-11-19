@@ -34,7 +34,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 ```bash
 pip install -U modelscope
 
-# 常用：Phase-modulation-transforme 初始化权重 + MedQA 检索样本
+# 常用：Phase-modulation-transformer 初始化权重 + MedQA 检索样本
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
 # 检索重建：Embedding + 教材 + FAISS + 原始题目
@@ -47,7 +47,7 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 
 | 文件 | 约大小 | 解压后位置 | 用途 |
 |------|--------|------------|------|
-| `01_parameters.tar` | 6.4G | `parameters/` | 预训练后的 Phase-modulation-transforme（HF 与 `sft_PMT_en_1024.pth`） |
+| `01_parameters.tar` | 6.4G | `parameters/` | `PMT_Base_300M`、`pretrain_*.pth`（可选）、`sft_PMT_en_1024.pth` 等；主流程以 `sft_PMT_en_1024.pth` 为级联初始化 |
 | `04_medqa_rag_json.tar` | — | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA 检索增强样本（`generate_question_with_knowledges.py` 口径） |
 | `03b_corpus_openhermes2_5.tar` | 1.6G | `dataset/openhermes2_5.jsonl` | 英文通用指令微调（可选） |
 | `03d_corpus_sft_mini_512_zh.tar` | 1.2G | `dataset/sft_mini_512_zh.jsonl` | 中文指令微调（可选） |

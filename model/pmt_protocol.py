@@ -2,11 +2,11 @@
 
 Protocols (public names only; slot wiring stays in sidecar_map.json):
 
-  no_pmt     — no PhaseModulationTransforme; standalone upstream letter prediction
-  pmt_norag  — PhaseModulationTransforme + non-retrieval cascade branch
-  pmt_rag    — PhaseModulationTransforme + retrieval-augmented cascade branch
+  no_pmt     — no PhaseModulationTransformer; standalone upstream letter prediction
+  pmt_norag  — PhaseModulationTransformer + non-retrieval cascade branch
+  pmt_rag    — PhaseModulationTransformer + retrieval-augmented cascade branch
 
-Train vs infer automatically resolve distinct PhaseModulationTransforme checkpoints.
+Train vs infer automatically resolve distinct PhaseModulationTransformer checkpoints.
 """
 
 from __future__ import annotations
@@ -89,12 +89,12 @@ def protocol_needs_pmt(protocol: str) -> bool:
 
 def default_out_dir(protocol: str) -> Path:
     if protocol not in DEFAULT_OUT:
-        raise ValueError(f"protocol {protocol} has no PhaseModulationTransforme out_dir")
+        raise ValueError(f"protocol {protocol} has no PhaseModulationTransformer out_dir")
     return DEFAULT_OUT[protocol]
 
 
 def resolve_pmt_init_ckpt(explicit: str | None = None) -> Path:
-    """Training always starts from the released pretrained PhaseModulationTransforme weights."""
+    """Training always starts from the released pretrained PhaseModulationTransformer weights."""
     if explicit:
         p = Path(explicit)
         if not p.is_file():
@@ -119,9 +119,9 @@ def resolve_pmt_infer_ckpt(
     out_dir: str | Path | None = None,
     hidden_size: int = 1024,
 ) -> Path:
-    """Inference loads the protocol-specific trained PhaseModulationTransforme (not the init weights)."""
+    """Inference loads the protocol-specific trained PhaseModulationTransformer (not the init weights)."""
     if not protocol_needs_pmt(protocol):
-        raise ValueError(f"protocol {protocol} does not use PhaseModulationTransforme")
+        raise ValueError(f"protocol {protocol} does not use PhaseModulationTransformer")
     if explicit:
         p = Path(explicit)
         if not p.is_file():
@@ -137,7 +137,7 @@ def resolve_pmt_infer_ckpt(
         if latest.is_file():
             return latest
     raise FileNotFoundError(
-        f"no trained PhaseModulationTransforme for protocol={protocol} under {base} "
+        f"no trained PhaseModulationTransformer for protocol={protocol} under {base} "
         f"(expected cascade_PMT_en_{hidden_size}_best.pth; train with --protocol {protocol} first)"
     )
 

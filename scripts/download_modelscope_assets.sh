@@ -3,7 +3,7 @@
 #
 # Usage (project root):
 #   bash scripts/download_modelscope_assets.sh
-#   PACKS="01 04" bash scripts/download_modelscope_assets.sh   # Phase-modulation-transforme init + MedQA retrieval JSON
+#   PACKS="01 04" bash scripts/download_modelscope_assets.sh   # Phase-modulation-transformer init + MedQA retrieval JSON
 #   PACKS="01 04" bash scripts/download_modelscope_assets.sh
 #   PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh   # rebuild retrieval remotely
 #

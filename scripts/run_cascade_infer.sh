@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Protocol evaluation (letter accuracy only; no upstream intermediates in CSV).
 #   PROTOCOL=no_pmt|pmt_norag|pmt_rag|all
-#   PhaseModulationTransforme checkpoints auto-resolved from out/run_cascade_{norag|rag}/
+#   PhaseModulationTransformer checkpoints auto-resolved from out/run_cascade_{norag|rag}/
 #
 #   PROTOCOL=all bash scripts/run_cascade_infer.sh
 set -euo pipefail

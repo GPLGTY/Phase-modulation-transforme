@@ -110,7 +110,7 @@ def update_manifest(pack: Path) -> None:
     manifest = [
         "# ModelScope asset manifest (public protocol)",
         "",
-        "- `01_parameters.tar`: pretrained PhaseModulationTransforme init weights",
+        "- `01_parameters.tar`: pretrained PhaseModulationTransformer init weights",
         "- `04_medqa_rag_json.tar`: MedQA retrieval samples",
         "- `05_embedding_stella.tar`: Stella embeddings under `dataset/pipeline/models/`",
         "- `06_textbooks.tar`: MedQA textbooks under `dataset/pipeline_data/textbooks/`",

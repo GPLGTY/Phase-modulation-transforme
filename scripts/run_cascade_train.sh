@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Protocol-specific PhaseModulationTransforme SFT.
+# Protocol-specific PhaseModulationTransformer SFT.
 #   PROTOCOL=pmt_norag|pmt_rag (required)
-#   Train always loads released pretrained PhaseModulationTransforme (INIT / pack 01).
+#   Train always loads released pretrained PhaseModulationTransformer (INIT / pack 01).
 #   Outputs go to out/run_pmt_norag or out/run_pmt_rag.
 #
 #   PROTOCOL=pmt_norag bash scripts/run_cascade_train.sh

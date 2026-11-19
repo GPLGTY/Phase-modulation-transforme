@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-在仓库内自定义 PhaseModulationTransforme 检查点（如 train_sft_intent 产出的 sft_intent_PMT_en_512.pth）上，
+在仓库内自定义 PhaseModulationTransformer 检查点（如 train_sft_intent 产出的 sft_intent_PMT_en_512.pth）上，
 对 MedQA **intent** JSON（messages 含 system / user / assistant）批量推理并写 CSV。
 
 **输入模型侧**：仅将 `messages` 中 **system + user** 合并后包进 `<s>[INST] … [/INST]`（与二阶段 SFT 训练一致），
@@ -38,7 +38,7 @@ from inference import (
     resolve_extracted_choice,
 )
 from model.PMTConfig import PMTConfig
-from model.pmtmodel import PhaseModulationTransforme
+from model.pmtmodel import PhaseModulationTransformer
 
 ROOT = Path(__file__).resolve().parent
 
@@ -120,7 +120,7 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.truncation_side = "left"
 
-    model = PhaseModulationTransforme(lm_config)
+    model = PhaseModulationTransformer(lm_config)
     state = torch.load(ckpt, map_location="cpu")
     model.load_state_dict(state, strict=False)
     model = model.to(device)

@@ -2,7 +2,7 @@
 """One-click protocol × dataset accuracy benchmark.
 
 Runs contrastive protocols (no_pmt / pmt_norag / pmt_rag) on one or more test sets,
-optionally trains missing PhaseModulationTransforme checkpoints first, then writes a comparison
+optionally trains missing PhaseModulationTransformer checkpoints first, then writes a comparison
 table (CSV + Markdown).
 
 Example:
@@ -266,7 +266,7 @@ def main():
             + '\nDownload with: PACKS="04" bash scripts/download_modelscope_assets.sh'
         )
 
-    # Train PhaseModulationTransforme protocols if needed
+    # Train PhaseModulationTransformer protocols if needed
     train_data = Path(args.train_data)
     for proto in protocols:
         if not protocol_needs_pmt(proto):
@@ -274,7 +274,7 @@ def main():
         need = args.force_train or not _ckpt_ready(proto, args.hidden_size)
         if need and args.skip_train:
             raise SystemExit(
-                f"missing trained PhaseModulationTransforme for {proto} under {default_out_dir(proto)} "
+                f"missing trained PhaseModulationTransformer for {proto} under {default_out_dir(proto)} "
                 "(run without --skip_train, or train first)"
             )
         if need:

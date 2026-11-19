@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Protocol no_pmt: standalone upstream letter prediction (no PhaseModulationTransforme).
+# Protocol no_pmt: standalone upstream letter prediction (no PhaseModulationTransformer).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"

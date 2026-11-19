@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader, DistributedSampler
 from transformers import AutoTokenizer, LlamaTokenizerFast
 from model.PMTConfig import PMTConfig
 from model.model import MiniMindForCausalLM
-from model.pmtmodel import PhaseModulationTransforme
+from model.pmtmodel import PhaseModulationTransformer
 
 import logging
 
@@ -167,7 +167,7 @@ def init_model(lm_config, model_type, language):
     # 2. Create model instance based on model type
     # Instantiate model by model type
     if model_type == "PMT":
-        model = PhaseModulationTransforme(lm_config)
+        model = PhaseModulationTransformer(lm_config)
     else:  # MM
         model = MiniMindForCausalLM(lm_config)
 
@@ -267,7 +267,7 @@ if __name__ == "__main__":
         type=str,
         default="MM",
         choices=["PMT", "MM"],
-        help="Model type: PMT (PhaseModulationTransforme) or MM (MiniMindForCausalLM)",
+        help="Model type: PMT (PhaseModulationTransformer) or MM (MiniMindForCausalLM)",
     )
     parser.add_argument(
         "--language",

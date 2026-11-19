@@ -2,12 +2,12 @@
 """Protocol evaluation: option-letter accuracy only (no upstream intermediates).
 
 Protocols:
-  no_pmt     — standalone upstream (no PhaseModulationTransforme)
-  pmt_norag  — PhaseModulationTransforme + non-retrieval cascade branch
-  pmt_rag    — PhaseModulationTransforme + retrieval-augmented cascade branch
+  no_pmt     — standalone upstream (no PhaseModulationTransformer)
+  pmt_norag  — PhaseModulationTransformer + non-retrieval cascade branch
+  pmt_rag    — PhaseModulationTransformer + retrieval-augmented cascade branch
   all       — run the three protocols and report each accuracy
 
-PhaseModulationTransforme checkpoints are resolved automatically:
+PhaseModulationTransformer checkpoints are resolved automatically:
   train writes out/run_cascade_{norag|rag}/; infer loads *_best.pth from there.
 """
 
@@ -24,7 +24,7 @@ from tqdm import tqdm
 
 from inference import format_inst_prompt_sft, merge_system_and_user_body
 from model.PMTConfig import PMTConfig
-from model.pmtmodel import PhaseModulationTransforme
+from model.pmtmodel import PhaseModulationTransformer
 from model.pmt_protocol import (
     ALL_PROTOCOLS,
     PROTOCOL_NO_PMT,
@@ -48,7 +48,7 @@ def extract_letter(text: str) -> str:
     return ch if ch in "ABCDE" else ""
 
 
-def _load_pmt(checkpoint: Path, args, device: torch.device) -> tuple[PhaseModulationTransforme, LlamaTokenizerFast]:
+def _load_pmt(checkpoint: Path, args, device: torch.device) -> tuple[PhaseModulationTransformer, LlamaTokenizerFast]:
     tok = LlamaTokenizerFast.from_pretrained(str(ROOT / "model" / "tokenizer_en"))
     cfg = PMTConfig(
         dim=args.hidden_size,
@@ -58,7 +58,7 @@ def _load_pmt(checkpoint: Path, args, device: torch.device) -> tuple[PhaseModula
         max_seq_len=args.max_seq_len,
         flash_attn=True,
     )
-    model = PhaseModulationTransforme(cfg)
+    model = PhaseModulationTransformer(cfg)
     state = torch.load(str(checkpoint), map_location="cpu")
     model.load_state_dict(state, strict=False)
     model.to(device)
@@ -241,13 +241,13 @@ def main():
         "--checkpoint",
         type=str,
         default="",
-        help="optional override; by default infer auto-loads protocol-trained PhaseModulationTransforme",
+        help="optional override; by default infer auto-loads protocol-trained PhaseModulationTransformer",
     )
     p.add_argument(
         "--out_dir",
         type=str,
         default="",
-        help="optional override of protocol PhaseModulationTransforme directory",
+        help="optional override of protocol PhaseModulationTransformer directory",
     )
     p.add_argument("--data_path", type=str, required=True)
     p.add_argument("--output_csv", type=str, default=str(ROOT / "results" / "protocol_eval.csv"))
