@@ -1,11 +1,11 @@
-# Phase-modulation-transforme
+﻿# Phase-modulation-transforme
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 
 中文说明：[README.md](README.md) / [README_CN.md](README_CN.md)
 
-GitHub: https://github.com/GPLGTY/Phase-modulation-transforme
+GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 
 This repository releases the complete experimental protocol for a Phase-Modulation Retrieval-Augmented Transformer on MedQA multiple-choice medical question answering, including implementation code, data-construction scripts, and reference evaluation results. Released Phase-modulation-transforme checkpoints are already pretrained; users start from these weights for supervised fine-tuning (SFT) and evaluation, and need not run pretraining. Large model checkpoints, corpora, and embedding resources are hosted on ModelScope (see below and [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)).
 

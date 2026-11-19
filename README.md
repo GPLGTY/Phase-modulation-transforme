@@ -1,11 +1,11 @@
-# Phase-modulation-transforme
+﻿# Phase-modulation-transforme
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 
 English: [README_EN.md](README_EN.md)
 
-GitHub: https://github.com/GPLGTY/Phase-modulation-transforme
+GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 
 本仓库发布相位调制检索增强 Transformer（Phase-Modulation Retrieval-Augmented Transformer）于 MedQA 医学选择题问答任务上的完整实验协议，包括实现代码、数据构建脚本与参考评测结果。所附 Phase-modulation-transforme 检查点业已经过预训练；使用者基于该初始化权重开展指令微调（SFT）与评测，无需自行预训练。体量较大的模型检查点、语料与 Embedding 资源托管于 ModelScope（见下文及 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)）。
 
