@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-使用 QubitFormer（默认 **QF_Struct_300M** 指令微调权重）对 MedQA RAG JSON 批量推理并写入 CSV。
+使用 PhaseModulationTransforme（默认 **PMT_Struct_300M** 指令微调权重）对 MedQA RAG JSON 批量推理并写入 CSV。
 
 **模型选择（与任务匹配）**
-- **QF_Struct_300M / MiniMind_Struct_300M**：指令微调，适合 `[INST]` + 选项指令，能稳定产出可读续写。
-- **QF_Base_300M / MiniMind_Base_300M**：仅预训练，未对齐对话指令；在相同模板下常见退化输出（例如反复换行），
+- **PMT_Struct_300M / MiniMind_Struct_300M**：指令微调，适合 `[INST]` + 选项指令，能稳定产出可读续写。
+- **PMT_Base_300M / MiniMind_Base_300M**：仅预训练，未对齐对话指令；在相同模板下常见退化输出（例如反复换行），
   CSV 里若再对整段 `strip`，会像「空输出」。评测请优先使用 Struct。
 
 默认推理：`--prompt_template sft` 与 `dataset/lm_en_dataset.SFTDataset` 一致（`<s>[INST] 单段正文 [/INST]`），
@@ -15,7 +15,7 @@
 把模型当作 **「答案提取器」** 即可：**content 里已经写好分析结论**，模型 **不要** 从头再做长篇推理；续写只做 **从该 content 里读出最终应对应的 A–E 中哪一项**，可附带 **一两句** 指向正文依据（可选），末行 **`Answer: <字母>`**。**`model_raw_output`** 存该短续写；**`extracted_choice`**（默认 `model`）**仅**从中解析字母。若要从 JSON 正文规则抄字母作对照，用 `--extract_choice_from assistant` / `both`。
 
 **对话与多轮**  
-- **QF_Struct_300M** 为 Llama2 风格 **单轮** `<s>[INST]…[/INST]` 指令微调；多轮需在字符串里自行拼历史。**不是**通用聊天产品。
+- **PMT_Struct_300M** 为 Llama2 风格 **单轮** `<s>[INST]…[/INST]` 指令微调；多轮需在字符串里自行拼历史。**不是**通用聊天产品。
 
 **`assistant_rag` 与现有开关的区别（仅 `--prompt_mode assistant_rag` 时）**
 
@@ -1036,10 +1036,10 @@ def run():
     parser.add_argument(
         "--model_path",
         type=str,
-        default=str(root / "parameters" / "QF_Struct_300M"),
+        default=str(root / "parameters" / "PMT_Struct_300M"),
         help=(
             "模型目录（含 config.json、pytorch_model.bin）。"
-            "MedQA 指令评测请用 **QF_Struct_300M**（默认）；预训练 Base 不适合该模板。"
+            "MedQA 指令评测请用 **PMT_Struct_300M**（默认）；预训练 Base 不适合该模板。"
         ),
     )
     parser.add_argument(
@@ -1144,7 +1144,7 @@ def run():
     parser.add_argument(
         "--fp16",
         action="store_true",
-        help="GPU 上使用 float16（更快；当前 qbmodel 仅对 Attention 做 bf16 autocast，易与 FFN 出现 float/half 混用报错，默认关闭）",
+        help="GPU 上使用 float16（更快；当前 pmtmodel 仅对 Attention 做 bf16 autocast，易与 FFN 出现 float/half 混用报错，默认关闭）",
     )
     parser.add_argument(
         "--assistant_keep_from_substring",
@@ -1265,7 +1265,7 @@ def run():
     base_name = os.path.basename(os.path.normpath(model_path))
     if "_Base_" in base_name:
         print(
-            "警告: 当前指向预训练 Base 权重。对 `[INST]` 选择题推理通常应使用 **QF_Struct_300M**（指令微调），"
+            "警告: 当前指向预训练 Base 权重。对 `[INST]` 选择题推理通常应使用 **PMT_Struct_300M**（指令微调），"
             "否则易出现仅换行等退化输出，看起来像 model_raw_output 为空（实为 strip 后无可见字符）。",
             file=sys.stderr,
         )
@@ -1277,7 +1277,7 @@ def run():
     # 超长时必须保留 prompt **末尾**（含 [/INST]）；HF 默认 truncation_side=right 会从末尾删 token，会裁掉 [/INST]
     tokenizer.truncation_side = "left"
 
-    # 默认 float32：与 qbmodel 中局部 autocast 兼容，避免 mat1 float / mat2 half
+    # 默认 float32：与 pmtmodel 中局部 autocast 兼容，避免 mat1 float / mat2 half
     dtype = (
         torch.float16 if (device.type == "cuda" and args.fp16) else torch.float32
     )
@@ -1353,7 +1353,7 @@ def run():
 
     if device.type == "cpu":
         for m in model.modules():
-            if m.__class__.__name__ == "QubitAttention":
+            if m.__class__.__name__ == "PMTAttention":
                 m.flash = False
 
     data_path = os.path.abspath(args.data_path)

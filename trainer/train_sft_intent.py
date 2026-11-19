@@ -12,13 +12,13 @@
 
 用法示例（在项目根目录执行）：
 
-初始化权重建议使用官方英文指令微调 **QF_Struct_300M** 导出的 Torch 检查点 ``parameters/sft_QF_en_1024.pth``（若尚无该文件：先放好 ``parameters/QF_Struct_300M``，再执行 ``scripts/stage2_intent_from_QF_Struct.sh`` 前半段导出逻辑，或使用 ``tools/convert_model.py`` 按该脚本同款参数转换）。下文模型规模与 ``parameters/QF_Struct_300M/config.json`` 一致。
+初始化权重建议使用官方英文指令微调 **PMT_Struct_300M** 导出的 Torch 检查点 ``parameters/sft_PMT_en_1024.pth``（若尚无该文件：先放好 ``parameters/PMT_Struct_300M``，再执行 ``scripts/stage2_intent_from_QF_Struct.sh`` 前半段导出逻辑，或使用 ``tools/convert_model.py`` 按该脚本同款参数转换）。下文模型规模与 ``parameters/PMT_Struct_300M/config.json`` 一致。
 
 默认 ``--early_stop_loss=0``（关闭）；若开启，阈值应设在 **去掉 pad 后的 answer CE** 上（单字母标签时 CE 也不会像含 pad 时那样虚低）。
 
 单行命令（建议整段复制到 bash）::
 
-  python trainer/train_sft_intent.py --init_ckpt parameters/sft_QF_en_1024.pth --data_path dataset/RAG_MedQA_US_train_10178_intent.json --out_dir out/run_sft_False_False --model_type QF --language en --hidden_size 1024 --num_hidden_layers 24 --num_attention_heads 16 --num_key_value_heads 4 --max_seq_len 4096 --batch_size 3 --accumulation_steps 8 --epochs 6 --sft_lr 5e-5 --early_stop_loss 0 --val_data_path dataset/RAG_MedQA_US_dev_1272_intent.json
+  python trainer/train_sft_intent.py --init_ckpt parameters/sft_PMT_en_1024.pth --data_path dataset/RAG_MedQA_US_train_10178_intent.json --out_dir out/run_sft_False_False --model_type QF --language en --hidden_size 1024 --num_hidden_layers 24 --num_attention_heads 16 --num_key_value_heads 4 --max_seq_len 4096 --batch_size 3 --accumulation_steps 8 --epochs 6 --sft_lr 5e-5 --early_stop_loss 0 --val_data_path dataset/RAG_MedQA_US_dev_1272_intent.json
 
 若必须手写多续行：行末只放一个反斜杠续行符，该行反斜杠后不能有空格（也不要在本文件字符串里写成连续两个 ``\\`` 再整段粘贴到终端）。
 
@@ -50,9 +50,9 @@ from transformers import LlamaTokenizerFast
 
 import logging
 
-from model.QFConfig import QFConfig
+from model.PMTConfig import PMTConfig
 from model.model import MiniMindForCausalLM
-from model.qbmodel import QubitFormer
+from model.pmtmodel import PhaseModulationTransforme
 from dataset.lm_en_dataset import SFTIntentMessagesDataset
 from inference import format_inst_prompt_sft, merge_system_and_user_body
 
@@ -474,8 +474,8 @@ def init_model(lm_config, model_type: str, language: str, init_ckpt: str):
     tok_dir = PROJECT_ROOT / "model" / ("tokenizer_zh" if language == "zh" else "tokenizer_en")
     tokenizer = LlamaTokenizerFast.from_pretrained(str(tok_dir))
 
-    if model_type == "QF":
-        model = QubitFormer(lm_config)
+    if model_type == "PMT":
+        model = PhaseModulationTransforme(lm_config)
     else:
         model = MiniMindForCausalLM(lm_config)
 
@@ -533,7 +533,7 @@ if __name__ == "__main__":
         "--init_ckpt",
         type=str,
         default="",
-        help="已有英文 SFT 权重 .pth（推荐 parameters/sft_QF_en_1024.pth，由 parameters/QF_Struct_300M 转换）；为空则尝试加载 out_dir 下 pretrain_*",
+        help="已有英文 SFT 权重 .pth（推荐 parameters/sft_PMT_en_1024.pth，由 parameters/PMT_Struct_300M 转换）；为空则尝试加载 out_dir 下 pretrain_*",
     )
     parser.add_argument(
         "--data_path",
@@ -570,7 +570,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--dtype", type=str, default="bfloat16", choices=["bfloat16", "float16", "float32"])
     parser.add_argument("--use_wandb", action="store_true")
-    parser.add_argument("--wandb_project", type=str, default="QubitFormer-SFT-Intent")
+    parser.add_argument("--wandb_project", type=str, default="PhaseModulationTransforme-SFT-Intent")
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--ddp", action="store_true")
     parser.add_argument("--grad_clip", type=float, default=1.0)
@@ -587,7 +587,7 @@ if __name__ == "__main__":
         help="意图数据 user 很长，建议 4096；显存不足可降到 2048 并略增 batch",
     )
     parser.add_argument("--sft_lr", type=float, default=5e-5, help="本阶段实际优化器学习率")
-    parser.add_argument("--model_type", type=str, default="QF", choices=["QF", "MM"])
+    parser.add_argument("--model_type", type=str, default="PMT", choices=["PMT", "MM"])
     parser.add_argument("--language", type=str, default="en", choices=["zh", "en"])
     parser.add_argument(
         "--no_torch_compile",
@@ -632,7 +632,7 @@ if __name__ == "__main__":
     else:
         vocab_size = 32000
 
-    lm_config = QFConfig(
+    lm_config = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """One-click protocol × dataset accuracy benchmark.
 
-Runs contrastive protocols (no_qf / qf_norag / qf_rag) on one or more test sets,
-optionally trains missing QubitFormer checkpoints first, then writes a comparison
+Runs contrastive protocols (no_pmt / pmt_norag / pmt_rag) on one or more test sets,
+optionally trains missing PhaseModulationTransforme checkpoints first, then writes a comparison
 table (CSV + Markdown).
 
 Example:
@@ -26,15 +26,15 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from model.qf_protocol import (  # noqa: E402
+from model.pmt_protocol import (  # noqa: E402
     ALL_PROTOCOLS,
-    PROTOCOL_QF_NORAG,
-    PROTOCOL_QF_RAG,
+    PROTOCOL_PMT_NORAG,
+    PROTOCOL_PMT_RAG,
     default_out_dir,
-    protocol_needs_qf,
-    resolve_qf_infer_ckpt,
+    protocol_needs_pmt,
+    resolve_pmt_infer_ckpt,
 )
-from inference_cascade_qf import run_protocol  # noqa: E402
+from inference_cascade_pmt import run_protocol  # noqa: E402
 
 DEFAULT_DATASETS = {
     "medqa_us_dev": ROOT / "dataset" / "RAG_MedQA_US_dev_1272.json",
@@ -64,7 +64,7 @@ def _parse_datasets(spec: str) -> list[tuple[str, Path]]:
 
 def _ckpt_ready(protocol: str, hidden_size: int) -> bool:
     try:
-        resolve_qf_infer_ckpt(protocol, hidden_size=hidden_size)
+        resolve_pmt_infer_ckpt(protocol, hidden_size=hidden_size)
         return True
     except FileNotFoundError:
         return False
@@ -74,7 +74,7 @@ def _train_protocol(protocol: str, train_data: Path, args) -> None:
     out_dir = default_out_dir(protocol)
     out_dir.mkdir(parents=True, exist_ok=True)
     common = [
-        str(ROOT / "trainer" / "train_cascade_qf.py"),
+        str(ROOT / "trainer" / "train_cascade_pmt.py"),
         "--protocol",
         protocol,
         "--data_path",
@@ -207,7 +207,7 @@ def main():
     p.add_argument(
         "--protocols",
         type=str,
-        default="no_qf,qf_norag,qf_rag",
+        default="no_pmt,pmt_norag,pmt_rag",
         help="Comma list of protocols",
     )
     p.add_argument(
@@ -219,7 +219,7 @@ def main():
     p.add_argument(
         "--force_train",
         action="store_true",
-        help="Always retrain qf_norag / qf_rag before eval",
+        help="Always retrain pmt_norag / pmt_rag before eval",
     )
     p.add_argument(
         "--results_dir",
@@ -266,15 +266,15 @@ def main():
             + '\nDownload with: PACKS="04" bash scripts/download_modelscope_assets.sh'
         )
 
-    # Train QubitFormer protocols if needed
+    # Train PhaseModulationTransforme protocols if needed
     train_data = Path(args.train_data)
     for proto in protocols:
-        if not protocol_needs_qf(proto):
+        if not protocol_needs_pmt(proto):
             continue
         need = args.force_train or not _ckpt_ready(proto, args.hidden_size)
         if need and args.skip_train:
             raise SystemExit(
-                f"missing trained QubitFormer for {proto} under {default_out_dir(proto)} "
+                f"missing trained PhaseModulationTransforme for {proto} under {default_out_dir(proto)} "
                 "(run without --skip_train, or train first)"
             )
         if need:
@@ -289,7 +289,7 @@ def main():
     detail_dir = run_dir / "details"
     detail_dir.mkdir(exist_ok=True)
 
-    # Namespace compatible with inference_cascade_qf.run_protocol
+    # Namespace compatible with inference_cascade_pmt.run_protocol
     class _Args:
         pass
 

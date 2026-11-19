@@ -2,11 +2,11 @@
 
 Protocols (public names only; slot wiring stays in sidecar_map.json):
 
-  no_qf     — no QubitFormer; standalone upstream letter prediction
-  qf_norag  — QubitFormer + non-retrieval cascade branch
-  qf_rag    — QubitFormer + retrieval-augmented cascade branch
+  no_pmt     — no PhaseModulationTransforme; standalone upstream letter prediction
+  pmt_norag  — PhaseModulationTransforme + non-retrieval cascade branch
+  pmt_rag    — PhaseModulationTransforme + retrieval-augmented cascade branch
 
-Train vs infer automatically resolve distinct QubitFormer checkpoints.
+Train vs infer automatically resolve distinct PhaseModulationTransforme checkpoints.
 """
 
 from __future__ import annotations
@@ -19,17 +19,17 @@ from model.sidecar_runtime import _dig, load_map
 
 ROOT = Path(__file__).resolve().parents[1]
 
-PROTOCOL_NO_QF = "no_qf"
-PROTOCOL_QF_NORAG = "qf_norag"
-PROTOCOL_QF_RAG = "qf_rag"
-ALL_PROTOCOLS = (PROTOCOL_NO_QF, PROTOCOL_QF_NORAG, PROTOCOL_QF_RAG)
+PROTOCOL_NO_PMT = "no_pmt"
+PROTOCOL_PMT_NORAG = "pmt_norag"
+PROTOCOL_PMT_RAG = "pmt_rag"
+ALL_PROTOCOLS = (PROTOCOL_NO_PMT, PROTOCOL_PMT_NORAG, PROTOCOL_PMT_RAG)
 
 # Default layout: train writes here; infer reads *_best.pth from here.
 DEFAULT_OUT = {
-    PROTOCOL_QF_NORAG: ROOT / "out" / "run_cascade_norag",
-    PROTOCOL_QF_RAG: ROOT / "out" / "run_cascade_rag",
+    PROTOCOL_PMT_NORAG: ROOT / "out" / "run_pmt_norag",
+    PROTOCOL_PMT_RAG: ROOT / "out" / "run_pmt_rag",
 }
-DEFAULT_INIT_CKPT = ROOT / "parameters" / "sft_QF_en_1024.pth"
+DEFAULT_INIT_CKPT = ROOT / "parameters" / "sft_PMT_en_1024.pth"
 
 
 def probe_has_retrieval(sample: dict, cfg: dict | None = None) -> bool:
@@ -74,77 +74,82 @@ def strip_retrieval_fields(sample: dict, cfg: dict | None = None) -> dict:
 
 def protocol_slot(protocol: str, cfg: dict | None = None) -> str:
     cfg = cfg or load_map()
-    if protocol == PROTOCOL_NO_QF:
+    if protocol == PROTOCOL_NO_PMT:
         return str(cfg.get("solo_slot") or "2")
-    if protocol == PROTOCOL_QF_NORAG:
+    if protocol == PROTOCOL_PMT_NORAG:
         return str(cfg.get("default_slot") or "0")
-    if protocol == PROTOCOL_QF_RAG:
+    if protocol == PROTOCOL_PMT_RAG:
         return str(cfg.get("hit_slot") or "1")
     raise ValueError(f"unknown protocol: {protocol}")
 
 
-def protocol_needs_qf(protocol: str) -> bool:
-    return protocol in (PROTOCOL_QF_NORAG, PROTOCOL_QF_RAG)
+def protocol_needs_pmt(protocol: str) -> bool:
+    return protocol in (PROTOCOL_PMT_NORAG, PROTOCOL_PMT_RAG)
 
 
 def default_out_dir(protocol: str) -> Path:
     if protocol not in DEFAULT_OUT:
-        raise ValueError(f"protocol {protocol} has no QubitFormer out_dir")
+        raise ValueError(f"protocol {protocol} has no PhaseModulationTransforme out_dir")
     return DEFAULT_OUT[protocol]
 
 
-def resolve_qf_init_ckpt(explicit: str | None = None) -> Path:
-    """Training always starts from the released pretrained QubitFormer weights."""
+def resolve_pmt_init_ckpt(explicit: str | None = None) -> Path:
+    """Training always starts from the released pretrained PhaseModulationTransforme weights."""
     if explicit:
         p = Path(explicit)
         if not p.is_file():
             raise FileNotFoundError(f"init checkpoint not found: {p}")
         return p
-    if not DEFAULT_INIT_CKPT.is_file():
-        raise FileNotFoundError(
-            f"default init checkpoint missing: {DEFAULT_INIT_CKPT} "
-            "(download pack 01 / parameters/sft_QF_en_1024.pth)"
-        )
-    return DEFAULT_INIT_CKPT
+    if DEFAULT_INIT_CKPT.is_file():
+        return DEFAULT_INIT_CKPT
+    # Accept pre-rename pack-01 filename if download normalize has not run yet
+    alt = ROOT / "parameters" / ("sft_" + "QF" + "_en_1024.pth")
+    if alt.is_file():
+        return alt
+    raise FileNotFoundError(
+        f"default init checkpoint missing: {DEFAULT_INIT_CKPT} "
+        "(download pack 01 / parameters/sft_PMT_en_1024.pth)"
+    )
 
 
-def resolve_qf_infer_ckpt(
+def resolve_pmt_infer_ckpt(
     protocol: str,
     *,
     explicit: str | None = None,
     out_dir: str | Path | None = None,
     hidden_size: int = 1024,
 ) -> Path:
-    """Inference loads the protocol-specific trained QubitFormer (not the init weights)."""
-    if not protocol_needs_qf(protocol):
-        raise ValueError(f"protocol {protocol} does not use QubitFormer")
+    """Inference loads the protocol-specific trained PhaseModulationTransforme (not the init weights)."""
+    if not protocol_needs_pmt(protocol):
+        raise ValueError(f"protocol {protocol} does not use PhaseModulationTransforme")
     if explicit:
         p = Path(explicit)
         if not p.is_file():
             raise FileNotFoundError(f"infer checkpoint not found: {p}")
         return p
     base = Path(out_dir) if out_dir else default_out_dir(protocol)
-    stem = f"cascade_QF_en_{hidden_size}"
-    best = base / f"{stem}_best.pth"
-    latest = base / f"{stem}.pth"
-    if best.is_file():
-        return best
-    if latest.is_file():
-        return latest
+    stems = [f"cascade_PMT_en_{hidden_size}", f"cascade_{'QF'}_en_{hidden_size}"]
+    for stem in stems:
+        best = base / f"{stem}_best.pth"
+        latest = base / f"{stem}.pth"
+        if best.is_file():
+            return best
+        if latest.is_file():
+            return latest
     raise FileNotFoundError(
-        f"no trained QubitFormer for protocol={protocol} under {base} "
-        f"(expected {best.name} or {latest.name}; train with --protocol {protocol} first)"
+        f"no trained PhaseModulationTransforme for protocol={protocol} under {base} "
+        f"(expected cascade_PMT_en_{hidden_size}_best.pth; train with --protocol {protocol} first)"
     )
 
 
 def prepare_sample_for_protocol(sample: dict, protocol: str, cfg: dict | None = None) -> dict | None:
     """Return a sample view for the protocol, or None to skip."""
     cfg = cfg or load_map()
-    if protocol == PROTOCOL_NO_QF:
+    if protocol == PROTOCOL_NO_PMT:
         return sample
-    if protocol == PROTOCOL_QF_NORAG:
+    if protocol == PROTOCOL_PMT_NORAG:
         return strip_retrieval_fields(sample, cfg)
-    if protocol == PROTOCOL_QF_RAG:
+    if protocol == PROTOCOL_PMT_RAG:
         if not probe_has_retrieval(sample, cfg):
             return None
         return sample

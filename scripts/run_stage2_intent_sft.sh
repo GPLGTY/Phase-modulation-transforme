@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # MedQA Intent 二阶段 SFT
-# 初始化: parameters/sft_QF_en_1024.pth
+# 初始化: parameters/sft_PMT_en_1024.pth
 # 训练: dataset/RAG_MedQA_US_train_10178_intent.json
 # 验证: dataset/RAG_MedQA_US_dev_1272_intent.json
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-INIT="${INIT:-$ROOT/parameters/sft_QF_en_1024.pth}"
+INIT="${INIT:-$ROOT/parameters/sft_PMT_en_1024.pth}"
 OUT="${OUT:-$ROOT/out/run_sft_intent}"
 TRAIN="${TRAIN:-$ROOT/dataset/RAG_MedQA_US_train_10178_intent.json}"
 VAL="${VAL:-$ROOT/dataset/RAG_MedQA_US_dev_1272_intent.json}"
 
 if [[ ! -f "$INIT" ]]; then
   echo "缺少初始化权重: $INIT" >&2
-  echo "请先完成预训练与通用 SFT，或使用仓库已附带的 parameters/sft_QF_en_1024.pth。" >&2
+  echo "请先完成预训练与通用 SFT，或使用仓库已附带的 parameters/sft_PMT_en_1024.pth。" >&2
   exit 1
 fi
 
@@ -39,5 +39,5 @@ python3 "$ROOT/trainer/train_sft_intent.py" \
   --early_stop_loss 0 \
   --best_metric val_answer_acc
 
-echo "训练结束: $OUT/sft_intent_QF_en_1024_best.pth"
-echo "测试: CHECKPOINT=$OUT/sft_intent_QF_en_1024_best.pth bash scripts/eval_medqa_test.sh"
+echo "训练结束: $OUT/sft_intent_PMT_en_1024_best.pth"
+echo "测试: CHECKPOINT=$OUT/sft_intent_PMT_en_1024_best.pth bash scripts/eval_medqa_test.sh"

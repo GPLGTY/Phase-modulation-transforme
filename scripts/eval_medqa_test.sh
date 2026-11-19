@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-CHECKPOINT="${CHECKPOINT:-$ROOT/out/run_sft_intent/sft_intent_QF_en_1024_best.pth}"
+CHECKPOINT="${CHECKPOINT:-$ROOT/out/run_sft_intent/sft_intent_PMT_en_1024_best.pth}"
 DATA="${DATA:-$ROOT/dataset/RAG_MedQA_US_test_1273_intent.json}"
 RESULTS="${RESULTS:-$ROOT/results/medqa_intent_test1273_eval}"
 TEMPS="${TEMPS:-0.7}"

@@ -7,17 +7,17 @@
 
 GitHub: https://github.com/GPLGTY/Phase-modulation-transforme
 
-This repository releases the complete experimental protocol for a Phase-Modulation Retrieval-Augmented Transformer on MedQA multiple-choice medical question answering, including implementation code, data-construction scripts, and reference evaluation results. Released QubitFormer checkpoints are already pretrained; users start from these weights for supervised fine-tuning (SFT) and evaluation, and need not run pretraining. Large model checkpoints, corpora, and embedding resources are hosted on ModelScope (see below and [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)).
+This repository releases the complete experimental protocol for a Phase-Modulation Retrieval-Augmented Transformer on MedQA multiple-choice medical question answering, including implementation code, data-construction scripts, and reference evaluation results. Released Phase-modulation-transforme checkpoints are already pretrained; users start from these weights for supervised fine-tuning (SFT) and evaluation, and need not run pretraining. Large model checkpoints, corpora, and embedding resources are hosted on ModelScope (see below and [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)).
 
 Three contrastive evaluation protocols are provided (each predicts an option letter, compares it with the gold label, and reports accuracy):
 
 | Protocol | Description | Entry |
 |----------|-------------|-------|
-| `no_qf` | Upstream only (no QubitFormer) | `--protocol no_qf` |
-| `qf_norag` | Non-retrieval upstream → QubitFormer | `--protocol qf_norag` |
-| `qf_rag` | Retrieval-augmented upstream → QubitFormer | `--protocol qf_rag` |
+| `no_pmt` | Upstream only (no Phase-modulation-transforme) | `--protocol no_pmt` |
+| `pmt_norag` | Non-retrieval upstream → Phase-modulation-transforme | `--protocol pmt_norag` |
+| `pmt_rag` | Retrieval-augmented upstream → Phase-modulation-transforme | `--protocol pmt_rag` |
 
-Training and inference automatically resolve distinct QubitFormer checkpoints: training initializes from `parameters/sft_QF_en_1024.pth` and writes to `out/run_cascade_norag/` or `out/run_cascade_rag/`; inference loads the corresponding `*_best.pth`. Evaluation artifacts record the final option letter and accuracy-related fields.
+Training and inference automatically resolve distinct Phase-modulation-transforme checkpoints: training initializes from `parameters/sft_PMT_en_1024.pth` and writes to `out/run_pmt_norag/` or `out/run_pmt_rag/`; inference loads the corresponding `*_best.pth`. Evaluation artifacts record the final option letter and accuracy-related fields.
 
 > The default training seed is `1337`; GPU nondeterminism may induce negligible numerical variation.
 >
@@ -71,7 +71,7 @@ Includes archive packs `01`–`05` and the three contrastive-protocol directorie
 
 ### Upstream generation checkpoints (required for contrastive protocols)
 
-`qf_norag` uses `parameters/ckpt_a`, `qf_rag` uses `parameters/ckpt_b`, and `no_qf` uses `parameters/ckpt_c`. From the project root:
+`pmt_norag` uses `parameters/ckpt_a`, `pmt_rag` uses `parameters/ckpt_b`, and `no_pmt` uses `parameters/ckpt_c`. From the project root:
 
 ```bash
 pip install -U modelscope
@@ -84,7 +84,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 
 Directories may also be obtained manually from the ModelScope page. Branch routing is defined in `model/sidecar_map.json` and selected via `--protocol`.
 
-Also required: QubitFormer initialization weights (`parameters/sft_QF_en_1024.pth` in pack `01`) and sample JSON with `question_with_options` and `answer_idx` (retrieval fields optional).
+Also required: Phase-modulation-transforme initialization weights (`parameters/sft_PMT_en_1024.pth` in pack `01`) and sample JSON with `question_with_options` and `answer_idx` (retrieval fields optional).
 
 ### Batch retrieval of archive packs (`.tar`)
 
@@ -93,7 +93,7 @@ From the **project root** (extracts into the conventional `parameters/`, `out/`,
 ```bash
 pip install -U modelscope
 
-# QubitFormer init weights + MedQA retrieval samples
+# Phase-modulation-transforme init weights + MedQA retrieval samples
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
 # Retrieval rebuild: embeddings + textbooks + FAISS + raw questions (includes English)
@@ -108,8 +108,8 @@ Alternatively, download `.tar` files from ModelScope and run `tar -xf <pack>.tar
 |-----------------------------|------------|------|
 | `parameters/ckpt_a` | `parameters/ckpt_a/` | Cascade upstream module, slot 0 |
 | `parameters/ckpt_b` | `parameters/ckpt_b/` | Cascade upstream module, slot 1 |
-| `parameters/ckpt_c` | `parameters/ckpt_c/` | Upstream module for protocol `no_qf` |
-| `01_parameters.tar` | `parameters/QF_*`, `parameters/MiniMind_*`, `parameters/sft_QF_en_1024.pth` | Pretrained QubitFormer (Hugging Face and SFT initialization checkpoints) |
+| `parameters/ckpt_c` | `parameters/ckpt_c/` | Upstream module for protocol `no_pmt` |
+| `01_parameters.tar` | `parameters/PMT_*`, `parameters/MiniMind_*`, `parameters/sft_PMT_en_1024.pth` | Pretrained Phase-modulation-transforme (Hugging Face and SFT initialization checkpoints) |
 | `03b_corpus_openhermes2_5.tar` | `dataset/openhermes2_5.jsonl` | English general instruction corpus |
 | `03d_corpus_sft_mini_512_zh.tar` | `dataset/sft_mini_512_zh.jsonl` | Chinese instruction corpus (optional) |
 | `04_medqa_rag_json.tar` | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA retrieval samples (`generate_question_with_knowledges.py` schema) |
@@ -129,9 +129,9 @@ bash scripts/run_protocol_benchmark.sh
 
 ```
 Phase-modulation-transforme/
-├── model/                 # QubitFormer and upstream routing / prompt config
+├── model/                 # Phase-modulation-transforme and upstream routing / prompt config
 ├── trainer/               # General SFT, cascade training
-├── inference_cascade_qf.py
+├── inference_cascade_pmt.py
 ├── tools/                 # Checkpoint format conversion and length extrapolation
 ├── scripts/               # Cascade launchers, baseline eval, ModelScope asset scripts
 ├── dataset/
@@ -141,10 +141,10 @@ Phase-modulation-transforme/
 ├── parameters/
 │   ├── ckpt_a/            # Cascade upstream module, slot 0
 │   ├── ckpt_b/            # Cascade upstream module, slot 1
-│   ├── ckpt_c/            # no_qf upstream module
-│   └── sft_QF_en_1024.pth # Pretrained QubitFormer (train init)
-├── out/run_cascade_norag/ # qf_norag checkpoints
-├── out/run_cascade_rag/   # qf_rag checkpoints
+│   ├── ckpt_c/            # no_pmt upstream module
+│   └── sft_PMT_en_1024.pth # Pretrained Phase-modulation-transforme (train init)
+├── out/run_pmt_norag/ # pmt_norag checkpoints
+├── out/run_pmt_rag/   # pmt_rag checkpoints
 ├── results/
 │   └── protocol_benchmark/               # Contrastive accuracy tables
 ├── requirements.txt
@@ -163,7 +163,7 @@ Phase-modulation-transforme/
 | MedQA US validation | `dataset/RAG_MedQA_US_dev_1272.json` (1272) | `04` |
 | MedQA US test | `dataset/RAG_MedQA_US_test_1273.json` (1273) | `04` |
 
-Retrieval: `PACKS="04"`, or jointly with checkpoints via `PACKS="01 04"`. Samples follow the retrieval-pipeline schema (with or without `retrieve_info`). Public corpus mirror: https://www.modelscope.cn/datasets/longview/QubitFormerDataset
+Retrieval: `PACKS="04"`, or jointly with checkpoints via `PACKS="01 04"`. Samples follow the retrieval-pipeline schema (with or without `retrieve_info`). Public corpus mirrors are listed in [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md) when available.
 
 To rebuild retrieval-augmented samples from raw MedQA, see **MedQA dataset**, **Dataset construction**, [dataset/DATA_PIPELINE_CN.md](dataset/DATA_PIPELINE_CN.md), and [dataset/pipeline/README.md](dataset/pipeline/README.md).
 
@@ -325,17 +325,17 @@ After `PACKS="01"` / `PACKS="02"` or a full download:
 
 | Path | Description | Pack |
 |------|-------------|------|
-| `parameters/QF_Base_300M/pytorch_model.bin` | QF Base | `01` |
-| `parameters/QF_Struct_300M/pytorch_model.bin` | QF Struct | `01` |
+| `parameters/PMT_Base_300M/pytorch_model.bin` | QF Base | `01` |
+| `parameters/PMT_Struct_300M/pytorch_model.bin` | QF Struct | `01` |
 | `parameters/MiniMind_Base_300M/pytorch_model.bin` | MiniMind Base | `01` |
 | `parameters/MiniMind_Struct_300M/pytorch_model.bin` | MiniMind Struct | `01` |
-| `parameters/sft_QF_en_1024.pth` | Pretrained QubitFormer (SFT / cascade initialization) | `01` |
+| `parameters/sft_PMT_en_1024.pth` | Pretrained Phase-modulation-transforme (SFT / cascade initialization) | `01` |
 
-QubitFormer weights in pack `01` are the intended SFT starting point; SFT outputs may also be obtained under the protocols below.
+Phase-modulation-transforme weights in pack `01` are the intended SFT starting point; SFT outputs may also be obtained under the protocols below.
 
 ## General instruction tuning (optional)
 
-If `parameters/sft_QF_en_1024.pth` is already available, skip this section and proceed to protocol training / evaluation.
+If `parameters/sft_PMT_en_1024.pth` is already available, skip this section and proceed to protocol training / evaluation.
 
 ```bash
 cd trainer
@@ -355,42 +355,42 @@ python train_full_sft.py \
     --out_dir ../parameters
 ```
 
-Produces `parameters/sft_QF_en_1024.pth`. For Chinese, set `--language zh` with `../dataset/sft_mini_512_zh.jsonl`.
+Produces `parameters/sft_PMT_en_1024.pth`. For Chinese, set `--language zh` with `../dataset/sft_mini_512_zh.jsonl`.
 
 Export from a Hugging Face directory: `bash scripts/export_stage1_from_hf.sh`.
 
 ## Contrastive protocols: training and evaluation
 
 ```text
-no_qf      : standalone upstream → option letter → accuracy
-qf_norag   : non-retrieval branch + QubitFormer → option letter → accuracy
-qf_rag     : retrieval-augmented branch + QubitFormer → option letter → accuracy
+no_pmt      : standalone upstream → option letter → accuracy
+pmt_norag   : non-retrieval branch + Phase-modulation-transforme → option letter → accuracy
+pmt_rag     : retrieval-augmented branch + Phase-modulation-transforme → option letter → accuracy
 ```
 
-- Training: `trainer/train_cascade_qf.py --protocol qf_norag|qf_rag` (auto-loads pretrained init weights)
-- Evaluation: `inference_cascade_qf.py --protocol no_qf|qf_norag|qf_rag|all` (auto-loads protocol `*_best.pth` when QubitFormer is used)
-- Routing: `model/sidecar_map.json`, `model/qf_protocol.py`, `model/sidecar_runtime.py`
+- Training: `trainer/train_cascade_pmt.py --protocol pmt_norag|pmt_rag` (auto-loads pretrained init weights)
+- Evaluation: `inference_cascade_pmt.py --protocol no_pmt|pmt_norag|pmt_rag|all` (auto-loads protocol `*_best.pth` when Phase-modulation-transforme is used)
+- Routing: `model/sidecar_map.json`, `model/pmt_protocol.py`, `model/sidecar_runtime.py`
 
 ### Prerequisites
 
 1. Obtain `parameters/ckpt_a`, `parameters/ckpt_b`, `parameters/ckpt_c` (ModelScope section)
-2. Obtain QubitFormer initialization weights: `PACKS="01" bash scripts/download_modelscope_assets.sh`
+2. Obtain Phase-modulation-transforme initialization weights: `PACKS="01" bash scripts/download_modelscope_assets.sh`
 3. Prepare sample JSON (pack `04`, or retrieval-augmented item JSON)
 
 ### Training (per protocol)
 
 ```bash
 DATA=dataset/RAG_MedQA_US_train_10178.json \
-  PROTOCOL=qf_norag bash scripts/run_cascade_train.sh
+  PROTOCOL=pmt_norag bash scripts/run_cascade_train.sh
 
 DATA=dataset/RAG_MedQA_US_train_10178.json \
-  PROTOCOL=qf_rag bash scripts/run_cascade_train.sh
+  PROTOCOL=pmt_rag bash scripts/run_cascade_train.sh
 ```
 
 Outputs:
 
-- `out/run_cascade_norag/cascade_QF_en_1024_best.pth`
-- `out/run_cascade_rag/cascade_QF_en_1024_best.pth`
+- `out/run_pmt_norag/cascade_PMT_en_1024_best.pth`
+- `out/run_pmt_rag/cascade_PMT_en_1024_best.pth`
 
 ### Evaluation (three protocols)
 
@@ -422,7 +422,7 @@ pip install -U modelscope
 # Obtain ckpt_a / ckpt_b / ckpt_c (see snapshot_download above)
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
-# One-click: train missing qf_norag/qf_rag if needed, evaluate all protocols on
+# One-click: train missing pmt_norag/pmt_rag if needed, evaluate all protocols on
 # default sets (US dev + US test), write results/protocol_benchmark/latest/comparison.csv
 bash scripts/run_protocol_benchmark.sh
 # Equivalent: python scripts/run_protocol_benchmark.py
@@ -450,7 +450,7 @@ After evaluation, check the accuracy comparison table (each run also writes a ti
 | `results/protocol_benchmark/latest/comparison.csv` | Quick entry: dataset × protocol accuracy (open in Excel / any editor) |
 | `results/protocol_benchmark/latest/comparison.md` | Same table as Markdown for reading in-repo |
 | `results/protocol_benchmark/<timestamp>/` | Full run artifacts: `comparison.csv` / `comparison.md` / `summary.json` |
-| `results/protocol_benchmark/<timestamp>/details/` | Per-sample predictions, e.g. `medqa_us_test__qf_rag.csv` |
+| `results/protocol_benchmark/<timestamp>/details/` | Per-sample predictions, e.g. `medqa_us_test__pmt_rag.csv` |
 
 ```bash
 # Summary table (recommended)

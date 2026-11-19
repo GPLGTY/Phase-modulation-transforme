@@ -2,12 +2,12 @@
 """Protocol evaluation: option-letter accuracy only (no upstream intermediates).
 
 Protocols:
-  no_qf     — standalone upstream (no QubitFormer)
-  qf_norag  — QubitFormer + non-retrieval cascade branch
-  qf_rag    — QubitFormer + retrieval-augmented cascade branch
+  no_pmt     — standalone upstream (no PhaseModulationTransforme)
+  pmt_norag  — PhaseModulationTransforme + non-retrieval cascade branch
+  pmt_rag    — PhaseModulationTransforme + retrieval-augmented cascade branch
   all       — run the three protocols and report each accuracy
 
-QubitFormer checkpoints are resolved automatically:
+PhaseModulationTransforme checkpoints are resolved automatically:
   train writes out/run_cascade_{norag|rag}/; infer loads *_best.pth from there.
 """
 
@@ -23,17 +23,17 @@ from transformers import LlamaTokenizerFast
 from tqdm import tqdm
 
 from inference import format_inst_prompt_sft, merge_system_and_user_body
-from model.QFConfig import QFConfig
-from model.qbmodel import QubitFormer
-from model.qf_protocol import (
+from model.PMTConfig import PMTConfig
+from model.pmtmodel import PhaseModulationTransforme
+from model.pmt_protocol import (
     ALL_PROTOCOLS,
-    PROTOCOL_NO_QF,
-    PROTOCOL_QF_NORAG,
-    PROTOCOL_QF_RAG,
+    PROTOCOL_NO_PMT,
+    PROTOCOL_PMT_NORAG,
+    PROTOCOL_PMT_RAG,
     prepare_sample_for_protocol,
-    protocol_needs_qf,
+    protocol_needs_pmt,
     protocol_slot,
-    resolve_qf_infer_ckpt,
+    resolve_pmt_infer_ckpt,
 )
 from model.sidecar_runtime import SidecarPool, gold_letter, load_map
 
@@ -48,9 +48,9 @@ def extract_letter(text: str) -> str:
     return ch if ch in "ABCDE" else ""
 
 
-def _load_qf(checkpoint: Path, args, device: torch.device) -> tuple[QubitFormer, LlamaTokenizerFast]:
+def _load_pmt(checkpoint: Path, args, device: torch.device) -> tuple[PhaseModulationTransforme, LlamaTokenizerFast]:
     tok = LlamaTokenizerFast.from_pretrained(str(ROOT / "model" / "tokenizer_en"))
-    cfg = QFConfig(
+    cfg = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,
@@ -58,7 +58,7 @@ def _load_qf(checkpoint: Path, args, device: torch.device) -> tuple[QubitFormer,
         max_seq_len=args.max_seq_len,
         flash_attn=True,
     )
-    model = QubitFormer(cfg)
+    model = PhaseModulationTransforme(cfg)
     state = torch.load(str(checkpoint), map_location="cpu")
     model.load_state_dict(state, strict=False)
     model.to(device)
@@ -75,10 +75,10 @@ def _load_qf(checkpoint: Path, args, device: torch.device) -> tuple[QubitFormer,
 
 def _build_sidecar(protocol: str, args, route_cfg: dict) -> SidecarPool:
     slot = protocol_slot(protocol, route_cfg)
-    if protocol == PROTOCOL_NO_QF:
+    if protocol == PROTOCOL_NO_PMT:
         tp = {slot: args.sidecar_tp2}
         mem = {slot: args.sidecar_mem2}
-    elif protocol == PROTOCOL_QF_NORAG:
+    elif protocol == PROTOCOL_PMT_NORAG:
         tp = {slot: args.sidecar_tp0}
         mem = {slot: args.sidecar_mem0}
     else:
@@ -111,14 +111,14 @@ def run_protocol(
     tok = None
     device = torch.device(args.device)
     ckpt_used = None
-    if protocol_needs_qf(protocol):
-        ckpt_used = resolve_qf_infer_ckpt(
+    if protocol_needs_pmt(protocol):
+        ckpt_used = resolve_pmt_infer_ckpt(
             protocol,
             explicit=args.checkpoint or None,
             out_dir=args.out_dir or None,
             hidden_size=args.hidden_size,
         )
-        model, tok = _load_qf(ckpt_used, args, device)
+        model, tok = _load_pmt(ckpt_used, args, device)
 
     if output_csv is not None:
         out_path = Path(output_csv)
@@ -152,7 +152,7 @@ def run_protocol(
                 n_skip += 1
                 continue
             gold = gold_letter(sample)
-            if protocol == PROTOCOL_NO_QF:
+            if protocol == PROTOCOL_NO_PMT:
                 _slot, _raw, pred = sidecar.generate_letter(
                     view,
                     temperature=min(args.sidecar_temperature, 0.2),
@@ -229,25 +229,25 @@ def main():
         "--protocol",
         choices=(*ALL_PROTOCOLS, "all"),
         default="all",
-        help="no_qf | qf_norag | qf_rag | all",
+        help="no_pmt | pmt_norag | pmt_rag | all",
     )
     p.add_argument(
         "--mode",
         choices=("cascade", "sidecar_only"),
         default="",
-        help="deprecated alias: cascade→qf_norag+qf_rag via all; sidecar_only→no_qf",
+        help="deprecated alias: cascade→pmt_norag+pmt_rag via all; sidecar_only→no_pmt",
     )
     p.add_argument(
         "--checkpoint",
         type=str,
         default="",
-        help="optional override; by default infer auto-loads protocol-trained QubitFormer",
+        help="optional override; by default infer auto-loads protocol-trained PhaseModulationTransforme",
     )
     p.add_argument(
         "--out_dir",
         type=str,
         default="",
-        help="optional override of protocol QubitFormer directory",
+        help="optional override of protocol PhaseModulationTransforme directory",
     )
     p.add_argument("--data_path", type=str, required=True)
     p.add_argument("--output_csv", type=str, default=str(ROOT / "results" / "protocol_eval.csv"))
@@ -277,7 +277,7 @@ def main():
     # Backward-compatible --mode mapping
     if args.mode and args.protocol == "all":
         if args.mode == "sidecar_only":
-            args.protocol = PROTOCOL_NO_QF
+            args.protocol = PROTOCOL_NO_PMT
         elif args.mode == "cascade":
             # Prefer explicit single protocol via --protocol; cascade alone is ambiguous
             args.protocol = "all"

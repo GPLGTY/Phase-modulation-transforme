@@ -23,7 +23,7 @@ MedQA 原始题库 + 教材
   dataset/RAG_MedQA_US_{train,dev,test}_*.json
         │
         ▼
-  对照协议：no_qf / qf_norag / qf_rag（见根目录 README）
+  对照协议：no_pmt / pmt_norag / pmt_rag（见根目录 README）
 ```
 
 | 本仓库 / ModelScope 归档包 `04` | 用途 |
@@ -125,7 +125,7 @@ python generate_question_with_knowledges.py \
 
 ### 2.4 进入训练与推理
 
-采用根目录三条对照协议（`no_qf` / `qf_norag` / `qf_rag`）。推荐一键基准：
+采用根目录三条对照协议（`no_pmt` / `pmt_norag` / `pmt_rag`）。推荐一键基准：
 
 ```bash
 bash scripts/run_protocol_benchmark.sh

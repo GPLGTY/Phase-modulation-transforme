@@ -200,7 +200,7 @@ def git_delete_and_update_manifest(new_tar: Path) -> None:
         "# ModelScope asset manifest (public protocol)",
         "",
         f"- `{NEW_PACK}`: MedQA retrieval samples (`generate_question_with_knowledges.py` schema)",
-        "- `01_parameters.tar`: pretrained QubitFormer init weights",
+        "- `01_parameters.tar`: pretrained PhaseModulationTransforme init weights",
         "- `03b_corpus_openhermes2_5.tar` / `03d_corpus_sft_mini_512_zh.tar`: optional SFT corpora",
         "- `05_embedding_stella.tar`: retrieval embeddings",
         "",

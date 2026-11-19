@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Protocol evaluation (letter accuracy only; no upstream intermediates in CSV).
-#   PROTOCOL=no_qf|qf_norag|qf_rag|all
-#   QubitFormer checkpoints auto-resolved from out/run_cascade_{norag|rag}/
+#   PROTOCOL=no_pmt|pmt_norag|pmt_rag|all
+#   PhaseModulationTransforme checkpoints auto-resolved from out/run_cascade_{norag|rag}/
 #
 #   PROTOCOL=all bash scripts/run_cascade_infer.sh
 set -euo pipefail
@@ -21,7 +21,7 @@ if [[ -n "${OUT_DIR:-}" ]]; then
   EXTRA+=(--out_dir "$OUT_DIR")
 fi
 
-python3 "$ROOT/inference_cascade_qf.py" \
+python3 "$ROOT/inference_cascade_pmt.py" \
   --protocol "$PROTOCOL" \
   --data_path "$DATA" \
   --output_csv "$OUT_CSV" \

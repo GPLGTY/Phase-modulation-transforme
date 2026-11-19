@@ -7,17 +7,17 @@ English: [README_EN.md](README_EN.md)
 
 GitHub: https://github.com/GPLGTY/Phase-modulation-transforme
 
-本仓库发布相位调制检索增强 Transformer（Phase-Modulation Retrieval-Augmented Transformer）于 MedQA 医学选择题问答任务上的完整实验协议，包括实现代码、数据构建脚本与参考评测结果。所附 QubitFormer 检查点业已经过预训练；使用者基于该初始化权重开展指令微调（SFT）与评测，无需自行预训练。体量较大的模型检查点、语料与 Embedding 资源托管于 ModelScope（见下文及 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)）。
+本仓库发布相位调制检索增强 Transformer（Phase-Modulation Retrieval-Augmented Transformer）于 MedQA 医学选择题问答任务上的完整实验协议，包括实现代码、数据构建脚本与参考评测结果。所附 Phase-modulation-transforme 检查点业已经过预训练；使用者基于该初始化权重开展指令微调（SFT）与评测，无需自行预训练。体量较大的模型检查点、语料与 Embedding 资源托管于 ModelScope（见下文及 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)）。
 
 本仓库提供三条对照评测协议（均输出选项字母并与标准答案比对、报告准确率）：
 
 | 协议 | 含义 | 入口 |
 |------|------|------|
-| `no_qf` | 仅上游模块完成选项预测（不经 QubitFormer） | `--protocol no_qf` |
-| `qf_norag` | 非检索增强上游 → QubitFormer | `--protocol qf_norag` |
-| `qf_rag` | 检索增强上游 → QubitFormer | `--protocol qf_rag` |
+| `no_pmt` | 仅上游模块完成选项预测（不经 Phase-modulation-transforme） | `--protocol no_pmt` |
+| `pmt_norag` | 非检索增强上游 → Phase-modulation-transforme | `--protocol pmt_norag` |
+| `pmt_rag` | 检索增强上游 → Phase-modulation-transforme | `--protocol pmt_rag` |
 
-训练与推理自动区分 QubitFormer 检查点：训练自 `parameters/sft_QF_en_1024.pth` 初始化并写入 `out/run_cascade_norag/` 或 `out/run_cascade_rag/`；推理默认加载对应目录下的 `*_best.pth`。评测产物记录最终选项字母与准确率相关字段。
+训练与推理自动区分 Phase-modulation-transforme 检查点：训练自 `parameters/sft_PMT_en_1024.pth` 初始化并写入 `out/run_pmt_norag/` 或 `out/run_pmt_rag/`；推理默认加载对应目录下的 `*_best.pth`。评测产物记录最终选项字母与准确率相关字段。
 
 > 训练默认随机种子为 `1337`；受 GPU 非确定性算子影响，数值结果可能存在可忽略的波动。
 >
@@ -71,7 +71,7 @@ GitHub 仓库以源代码为主；模型权重、语料与 Embedding 统一发�
 
 ### 上游生成模块检查点（对照协议必需）
 
-`qf_norag` 使用 `parameters/ckpt_a`，`qf_rag` 使用 `parameters/ckpt_b`，`no_qf` 使用 `parameters/ckpt_c`。于项目根目录执行：
+`pmt_norag` 使用 `parameters/ckpt_a`，`pmt_rag` 使用 `parameters/ckpt_b`，`no_pmt` 使用 `parameters/ckpt_c`。于项目根目录执行：
 
 ```bash
 pip install -U modelscope
@@ -84,7 +84,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 
 亦可在 ModelScope 页面按目录手动获取。分支路由见 `model/sidecar_map.json`（由 `--protocol` 选择加载）。
 
-另需预训练后的 QubitFormer 初始化权重（归档包 `01` 中的 `parameters/sft_QF_en_1024.pth`），以及含 `question_with_options`、`answer_idx` 的样本 JSON（可含检索相关字段）。
+另需预训练后的 Phase-modulation-transforme 初始化权重（归档包 `01` 中的 `parameters/sft_PMT_en_1024.pth`），以及含 `question_with_options`、`answer_idx` 的样本 JSON（可含检索相关字段）。
 
 ### 归档包（`.tar`）批量获取
 
@@ -93,7 +93,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 ```bash
 pip install -U modelscope
 
-# QubitFormer 初始化权重 + MedQA 检索样本
+# Phase-modulation-transforme 初始化权重 + MedQA 检索样本
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
 # 检索重建：Embedding + 教材 + FAISS + 原始题目（含英文）
@@ -108,8 +108,8 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 |------------------------|----------|------|
 | `parameters/ckpt_a` | `parameters/ckpt_a/` | 级联上游模块 slot 0 |
 | `parameters/ckpt_b` | `parameters/ckpt_b/` | 级联上游模块 slot 1 |
-| `parameters/ckpt_c` | `parameters/ckpt_c/` | `no_qf` 协议上游模块 |
-| `01_parameters.tar` | `parameters/QF_*`、`parameters/MiniMind_*`、`parameters/sft_QF_en_1024.pth` | 预训练后的 QubitFormer（Hugging Face 与 SFT 初始化检查点） |
+| `parameters/ckpt_c` | `parameters/ckpt_c/` | `no_pmt` 协议上游模块 |
+| `01_parameters.tar` | `parameters/PMT_*`、`parameters/MiniMind_*`、`parameters/sft_PMT_en_1024.pth` | 预训练后的 Phase-modulation-transforme（Hugging Face 与 SFT 初始化检查点） |
 | `03b_corpus_openhermes2_5.tar` | `dataset/openhermes2_5.jsonl` | 英文通用指令微调语料 |
 | `03d_corpus_sft_mini_512_zh.tar` | `dataset/sft_mini_512_zh.jsonl` | 中文指令微调语料（可选） |
 | `04_medqa_rag_json.tar` | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA 检索样本（`generate_question_with_knowledges.py` 口径） |
@@ -129,9 +129,9 @@ bash scripts/run_protocol_benchmark.sh
 
 ```
 Phase-modulation-transforme/
-├── model/                 # QubitFormer 与上游模块路由 / 提示配置
+├── model/                 # Phase-modulation-transforme 与上游模块路由 / 提示配置
 ├── trainer/               # 通用 SFT、级联训练
-├── inference_cascade_qf.py
+├── inference_cascade_pmt.py
 ├── tools/                 # 权重格式转换与长度外推
 ├── scripts/               # 级联启动、基线评测、ModelScope 资源脚本
 ├── dataset/
@@ -141,10 +141,10 @@ Phase-modulation-transforme/
 ├── parameters/
 │   ├── ckpt_a/            # 级联上游模块 slot 0
 │   ├── ckpt_b/            # 级联上游模块 slot 1
-│   ├── ckpt_c/            # no_qf 协议上游模块
-│   └── sft_QF_en_1024.pth # 预训练后的 QubitFormer（训练初始化）
-├── out/run_cascade_norag/ # qf_norag 训练检查点
-├── out/run_cascade_rag/   # qf_rag 训练检查点
+│   ├── ckpt_c/            # no_pmt 协议上游模块
+│   └── sft_PMT_en_1024.pth # 预训练后的 Phase-modulation-transforme（训练初始化）
+├── out/run_pmt_norag/ # pmt_norag 训练检查点
+├── out/run_pmt_rag/   # pmt_rag 训练检查点
 ├── results/
 │   └── protocol_benchmark/               # 对照准确率对比表
 ├── requirements.txt
@@ -163,7 +163,7 @@ Phase-modulation-transforme/
 | MedQA US 验证集 | `dataset/RAG_MedQA_US_dev_1272.json`（1272） | `04` |
 | MedQA US 测试集 | `dataset/RAG_MedQA_US_test_1273.json`（1273） | `04` |
 
-获取方式：`PACKS="04"`，或与检查点一并 `PACKS="01 04"`。样本为检索流水线产物（可含或不含 `retrieve_info`）。公开语料备份：https://www.modelscope.cn/datasets/longview/QubitFormerDataset
+获取方式：`PACKS="04"`，或与检查点一并 `PACKS="01 04"`。样本为检索流水线产物（可含或不含 `retrieve_info`）。公开语料备份见 ModelScope 数据集镜像（链接见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md) 如有）。
 
 若需自原始 MedQA 语料重建检索增强样本，参见下文「MedQA 数据集」「数据集构建」及 [dataset/DATA_PIPELINE_CN.md](dataset/DATA_PIPELINE_CN.md)、[dataset/pipeline/README.md](dataset/pipeline/README.md)。
 
@@ -325,17 +325,17 @@ python generate_question_with_knowledges.py \
 
 | 路径 | 说明 | 包 |
 |------|------|-----|
-| `parameters/QF_Base_300M/pytorch_model.bin` | QF Base | `01` |
-| `parameters/QF_Struct_300M/pytorch_model.bin` | QF Struct | `01` |
+| `parameters/PMT_Base_300M/pytorch_model.bin` | QF Base | `01` |
+| `parameters/PMT_Struct_300M/pytorch_model.bin` | QF Struct | `01` |
 | `parameters/MiniMind_Base_300M/pytorch_model.bin` | MiniMind Base | `01` |
 | `parameters/MiniMind_Struct_300M/pytorch_model.bin` | MiniMind Struct | `01` |
-| `parameters/sft_QF_en_1024.pth` | 预训练后的 QubitFormer（SFT / 级联初始化） | `01` |
+| `parameters/sft_PMT_en_1024.pth` | 预训练后的 Phase-modulation-transforme（SFT / 级联初始化） | `01` |
 
-包 `01` 中的 QubitFormer 权重可直接作为 SFT 起点；SFT 产物亦可按下文协议自行得到。
+包 `01` 中的 Phase-modulation-transforme 权重可直接作为 SFT 起点；SFT 产物亦可按下文协议自行得到。
 
 ## 通用指令微调（可选）
 
-若已获取 `parameters/sft_QF_en_1024.pth`，可跳过本节，直接进入对照协议训练 / 评测。
+若已获取 `parameters/sft_PMT_en_1024.pth`，可跳过本节，直接进入对照协议训练 / 评测。
 
 ```bash
 cd trainer
@@ -355,49 +355,49 @@ python train_full_sft.py \
     --out_dir ../parameters
 ```
 
-得到 `parameters/sft_QF_en_1024.pth`。中文设置 `--language zh`，语料为 `../dataset/sft_mini_512_zh.jsonl`。
+得到 `parameters/sft_PMT_en_1024.pth`。中文设置 `--language zh`，语料为 `../dataset/sft_mini_512_zh.jsonl`。
 
 亦可自 Hugging Face 目录导出：`bash scripts/export_stage1_from_hf.sh`。
 
 ## 对照协议：训练与评测
 
 ```text
-no_qf      ：独立上游 → 选项字母 → 准确率
-qf_norag   ：非检索分支 + QubitFormer → 选项字母 → 准确率
-qf_rag     ：检索增强分支 + QubitFormer → 选项字母 → 准确率
+no_pmt      ：独立上游 → 选项字母 → 准确率
+pmt_norag   ：非检索分支 + Phase-modulation-transforme → 选项字母 → 准确率
+pmt_rag     ：检索增强分支 + Phase-modulation-transforme → 选项字母 → 准确率
 ```
 
-- 训练：`trainer/train_cascade_qf.py --protocol qf_norag|qf_rag`（自动加载预训练初始化权重）
-- 评测：`inference_cascade_qf.py --protocol no_qf|qf_norag|qf_rag|all`（含 QubitFormer 时自动加载对应 `*_best.pth`）
-- 路由：`model/sidecar_map.json`、`model/qf_protocol.py`、`model/sidecar_runtime.py`
+- 训练：`trainer/train_cascade_pmt.py --protocol pmt_norag|pmt_rag`（自动加载预训练初始化权重）
+- 评测：`inference_cascade_pmt.py --protocol no_pmt|pmt_norag|pmt_rag|all`（含 Phase-modulation-transforme 时自动加载对应 `*_best.pth`）
+- 路由：`model/sidecar_map.json`、`model/pmt_protocol.py`、`model/sidecar_runtime.py`
 
 ### 前置条件
 
 1. 获取 `parameters/ckpt_a`、`parameters/ckpt_b`、`parameters/ckpt_c`（见 ModelScope 一节）
-2. 获取 QubitFormer 初始化权重：`PACKS="01" bash scripts/download_modelscope_assets.sh`
+2. 获取 Phase-modulation-transforme 初始化权重：`PACKS="01" bash scripts/download_modelscope_assets.sh`
 3. 准备样本 JSON（归档包 `04`，或检索增强后的题目 JSON）
 
 ### 训练（按协议分别进行）
 
 ```bash
-# 默认 NPROC=1。多进程：NPROC=8 PROTOCOL=qf_norag bash scripts/run_cascade_train.sh
+# 默认 NPROC=1。多进程：NPROC=8 PROTOCOL=pmt_norag bash scripts/run_cascade_train.sh
 DATA=dataset/RAG_MedQA_US_train_10178.json \
-  PROTOCOL=qf_norag bash scripts/run_cascade_train.sh
+  PROTOCOL=pmt_norag bash scripts/run_cascade_train.sh
 
 DATA=dataset/RAG_MedQA_US_train_10178.json \
-  PROTOCOL=qf_rag bash scripts/run_cascade_train.sh
+  PROTOCOL=pmt_rag bash scripts/run_cascade_train.sh
 ```
 
 输出：
 
-- `out/run_cascade_norag/cascade_QF_en_1024_best.pth`
-- `out/run_cascade_rag/cascade_QF_en_1024_best.pth`
+- `out/run_pmt_norag/cascade_PMT_en_1024_best.pth`
+- `out/run_pmt_rag/cascade_PMT_en_1024_best.pth`
 
 等价 Python：
 
 ```bash
-python trainer/train_cascade_qf.py \
-  --protocol qf_norag \
+python trainer/train_cascade_pmt.py \
+  --protocol pmt_norag \
   --data_path dataset/RAG_MedQA_US_train_10178.json \
   --sidecar_backend transformers \
   --hidden_size 1024 --num_hidden_layers 24 \
@@ -410,15 +410,15 @@ python trainer/train_cascade_qf.py \
 ### 评测（三条对照）
 
 ```bash
-# 一次跑完三条协议并分别报告准确率（自动选择 QubitFormer 检查点）
+# 一次跑完三条协议并分别报告准确率（自动选择 Phase-modulation-transforme 检查点）
 DATA=dataset/RAG_MedQA_US_test_1273.json \
 PROTOCOL=all OUT_CSV=results/protocol_eval.csv \
   bash scripts/run_cascade_infer.sh
 
 # 单条协议
-PROTOCOL=no_qf bash scripts/run_cascade_infer.sh
-PROTOCOL=qf_norag bash scripts/run_cascade_infer.sh
-PROTOCOL=qf_rag bash scripts/run_cascade_infer.sh
+PROTOCOL=no_pmt bash scripts/run_cascade_infer.sh
+PROTOCOL=pmt_norag bash scripts/run_cascade_infer.sh
+PROTOCOL=pmt_rag bash scripts/run_cascade_infer.sh
 ```
 
 结果 CSV 含 `extracted_choice`、`matches_answer_idx` 等预测字段；标准输出给出各协议准确率摘要。
@@ -443,13 +443,13 @@ pip install -U modelscope
 # 获取 ckpt_a / ckpt_b / ckpt_c（见上文 snapshot_download）
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
-# 一键：缺权重则先训练 qf_norag/qf_rag，再在默认测试集（US dev + US test）上评测三条协议，
+# 一键：缺权重则先训练 pmt_norag/pmt_rag，再在默认测试集（US dev + US test）上评测三条协议，
 # 输出准确率对比表 results/protocol_benchmark/latest/comparison.csv
 bash scripts/run_protocol_benchmark.sh
 # 等价：python scripts/run_protocol_benchmark.py
 ```
 
-仅评测（已有 `out/run_cascade_norag` / `out/run_cascade_rag`）：
+仅评测（已有 `out/run_pmt_norag` / `out/run_pmt_rag`）：
 
 ```bash
 SKIP_TRAIN=1 bash scripts/run_protocol_benchmark.sh
@@ -471,7 +471,7 @@ DATASETS="medqa_us_test=dataset/RAG_MedQA_US_test_1273.json" \
 | `results/protocol_benchmark/latest/comparison.csv` | 快捷入口：数据集 × 协议 的准确率表（Excel / 文本编辑器均可打开） |
 | `results/protocol_benchmark/latest/comparison.md` | 同上，Markdown 透视表，便于直接阅读 |
 | `results/protocol_benchmark/<时间戳>/` | 该次完整产物：`comparison.csv` / `comparison.md` / `summary.json` |
-| `results/protocol_benchmark/<时间戳>/details/` | 逐条预测明细，如 `medqa_us_test__qf_rag.csv`（含预测字母与是否答对） |
+| `results/protocol_benchmark/<时间戳>/details/` | 逐条预测明细，如 `medqa_us_test__pmt_rag.csv`（含预测字母与是否答对） |
 
 查看方式示例：
 

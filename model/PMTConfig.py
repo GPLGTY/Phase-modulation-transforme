@@ -2,8 +2,8 @@ from transformers import PretrainedConfig
 from typing import List
 
 
-class QFConfig(PretrainedConfig):
-    model_type = "QubitFormer"
+class PMTConfig(PretrainedConfig):
+    model_type = "PhaseModulationTransforme"
 
     def __init__(
         self,

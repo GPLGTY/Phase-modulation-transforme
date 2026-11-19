@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
-# Protocol-specific QubitFormer SFT.
-#   PROTOCOL=qf_norag|qf_rag (required)
-#   Train always loads released pretrained QubitFormer (INIT / pack 01).
-#   Outputs go to out/run_cascade_norag or out/run_cascade_rag.
+# Protocol-specific PhaseModulationTransforme SFT.
+#   PROTOCOL=pmt_norag|pmt_rag (required)
+#   Train always loads released pretrained PhaseModulationTransforme (INIT / pack 01).
+#   Outputs go to out/run_pmt_norag or out/run_pmt_rag.
 #
-#   PROTOCOL=qf_norag bash scripts/run_cascade_train.sh
-#   PROTOCOL=qf_rag   bash scripts/run_cascade_train.sh
+#   PROTOCOL=pmt_norag bash scripts/run_cascade_train.sh
+#   PROTOCOL=pmt_rag   bash scripts/run_cascade_train.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 PROTOCOL="${PROTOCOL:-}"
 if [[ -z "$PROTOCOL" ]]; then
-  echo "USAGE: PROTOCOL=qf_norag|qf_rag bash scripts/run_cascade_train.sh" >&2
+  echo "USAGE: PROTOCOL=pmt_norag|pmt_rag bash scripts/run_cascade_train.sh" >&2
   exit 1
 fi
 
 DATA="${DATA:-$ROOT/dataset/RAG_MedQA_US_train_10178.json}"
-INIT="${INIT:-$ROOT/parameters/sft_QF_en_1024.pth}"
-if [[ "$PROTOCOL" == "qf_norag" ]]; then
-  OUT="${OUT:-$ROOT/out/run_cascade_norag}"
-elif [[ "$PROTOCOL" == "qf_rag" ]]; then
-  OUT="${OUT:-$ROOT/out/run_cascade_rag}"
+INIT="${INIT:-$ROOT/parameters/sft_PMT_en_1024.pth}"
+if [[ "$PROTOCOL" == "pmt_norag" ]]; then
+  OUT="${OUT:-$ROOT/out/run_pmt_norag}"
+elif [[ "$PROTOCOL" == "pmt_rag" ]]; then
+  OUT="${OUT:-$ROOT/out/run_pmt_rag}"
 else
-  echo "PROTOCOL must be qf_norag or qf_rag" >&2
+  echo "PROTOCOL must be pmt_norag or pmt_rag" >&2
   exit 1
 fi
 
@@ -53,10 +53,10 @@ COMMON=(
 
 if [[ "$NPROC" -gt 1 ]]; then
   torchrun --standalone --nproc_per_node="$NPROC" \
-    "$ROOT/trainer/train_cascade_qf.py" --ddp "${COMMON[@]}"
+    "$ROOT/trainer/train_cascade_pmt.py" --ddp "${COMMON[@]}"
 else
-  python3 "$ROOT/trainer/train_cascade_qf.py" \
+  python3 "$ROOT/trainer/train_cascade_pmt.py" \
     --device "${DEVICE:-cuda:0}" "${COMMON[@]}"
 fi
 
-echo "done: $OUT/cascade_QF_en_1024_best.pth"
+echo "done: $OUT/cascade_PMT_en_1024_best.pth"

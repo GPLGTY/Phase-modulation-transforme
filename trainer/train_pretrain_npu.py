@@ -18,10 +18,10 @@ from contextlib import nullcontext
 import gc
 from transformers import AutoTokenizer
 from transformers import LlamaTokenizerFast
-from model.QFConfig import QFConfig
+from model.PMTConfig import PMTConfig
 
 from model.model import MiniMindForCausalLM
-from model.qbmodel import QubitFormer
+from model.pmtmodel import PhaseModulationTransforme
 from dataset.lm_zh_dataset import PretrainDataset as PretrainDatasetZh
 from dataset.lm_en_dataset import PretrainDataset as PretrainDatasetEn
 import numpy as np
@@ -346,8 +346,8 @@ def init_model(lm_config, args):
         tokenizer = LlamaTokenizerFast.from_pretrained("../model/tokenizer_en")
 
     Logger(f"Initializing model type: {args.model_type}")
-    if args.model_type == "QF":
-        model = QubitFormer(lm_config)
+    if args.model_type == "PMT":
+        model = PhaseModulationTransforme(lm_config)
     else:  # MM
         model = MiniMindForCausalLM(lm_config)
 
@@ -432,7 +432,7 @@ def print_training_summary(args, lm_config, model_params, device_info, total_sta
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="QubitFormer/MiniMind Pretraining on NPU"
+        description="PhaseModulationTransforme/MiniMind Pretraining on NPU"
     )
     parser.add_argument("--out_dir", type=str, default="out_qf10")
     parser.add_argument("--epochs", type=int, default=6)
@@ -467,9 +467,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_type",
         type=str,
-        default="QF",
-        choices=["QF", "MM"],
-        help="Model type: QF (QubitFormer) or MM (MiniMind)",
+        default="PMT",
+        choices=["PMT", "MM"],
+        help="Model type: PMT (PhaseModulationTransforme) or MM (MiniMind)",
     )
     parser.add_argument(
         "--language",
@@ -509,7 +509,7 @@ if __name__ == "__main__":
         Logger(f"Auto-set vocab_size to {args.vocab_size} for language {args.language}")
 
     # Create model configuration
-    lm_config = QFConfig(
+    lm_config = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-temperature（QubitEmbed）× ntk_alpha（NTK RoPE）推理期消融。
+temperature（PMTEmbed）× ntk_alpha（NTK RoPE）推理期消融。
 
 固定权重，在 dev intent JSON 上批量推理，输出与 inference_intent_results_s1024.csv 同列的逐条 CSV，
 并汇总 accuracy 到 results/ablation/summary.csv。
@@ -39,8 +39,8 @@ from inference import (
     postprocess_model_raw_output,
     resolve_extracted_choice,
 )
-from model.QFConfig import QFConfig
-from model.qbmodel import QubitFormer
+from model.PMTConfig import PMTConfig
+from model.pmtmodel import PhaseModulationTransforme
 
 CSV_FIELDS = [
     "id",
@@ -70,7 +70,7 @@ def _param_tag(name: str, value: float) -> str:
 
 
 def apply_ablation_settings(
-    model: QubitFormer,
+    model: PhaseModulationTransforme,
     temperature: float,
     ntk_alpha: float,
     ntk_max_train_len: int,
@@ -85,7 +85,7 @@ def apply_ablation_settings(
 
 
 def load_model_and_tokenizer(args, device: torch.device):
-    lm_config = QFConfig(
+    lm_config = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,
@@ -104,7 +104,7 @@ def load_model_and_tokenizer(args, device: torch.device):
     tokenizer.truncation_side = "left"
     tokenizer.padding_side = "left"
 
-    model = QubitFormer(lm_config)
+    model = PhaseModulationTransforme(lm_config)
     state = torch.load(args.checkpoint, map_location="cpu")
     model.load_state_dict(state, strict=False)
     model = model.to(device)
@@ -112,7 +112,7 @@ def load_model_and_tokenizer(args, device: torch.device):
 
     if device.type == "cpu":
         for m in model.modules():
-            if m.__class__.__name__ == "QubitAttention":
+            if m.__class__.__name__ == "PMTAttention":
                 m.flash = False
 
     if args.dtype == "bfloat16" and device.type == "cuda":
@@ -293,7 +293,7 @@ def _infer_batch(
 
 
 def run_one_combo(
-    model: QubitFormer,
+    model: PhaseModulationTransforme,
     tokenizer: LlamaTokenizerFast,
     data: list,
     args,
@@ -442,7 +442,7 @@ def main():
     parser.add_argument(
         "--checkpoint",
         type=str,
-        default=str(ROOT / "out" / "run_intent_seq8192_20260521" / "sft_intent_QF_en_1024.pth"),
+        default=str(ROOT / "out" / "run_intent_seq8192_20260521" / "sft_intent_PMT_en_1024.pth"),
     )
     parser.add_argument(
         "--data_path",

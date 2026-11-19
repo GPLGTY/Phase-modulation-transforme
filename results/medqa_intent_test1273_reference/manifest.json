@@ -1,5 +1,5 @@
 {
-  "checkpoint": "out/run_sft_intent/sft_intent_QF_en_1024_best.pth  # after you finish Intent SFT",
+  "checkpoint": "out/run_sft_intent/sft_intent_PMT_en_1024_best.pth  # after you finish Intent SFT",
   "data_path": "dataset/RAG_MedQA_US_test_1273_intent.json",
   "n_samples": 1273,
   "temperatures": [

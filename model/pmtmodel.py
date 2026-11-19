@@ -5,7 +5,7 @@ from torch import nn
 from transformers import PreTrainedModel, GenerationMixin
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from typing import Any, Optional, Tuple, List, Union
-from .QFConfig import QFConfig
+from .PMTConfig import PMTConfig
 
 
 # RMSNorm 层 / RMSNorm layer
@@ -61,8 +61,8 @@ def precompute_ntk_pos_cis(dim: int, max_seq_len: int, theta: float = 1e6):
     return torch.cos(freqs), torch.sin(freqs)
 
 
-# 量子嵌入层 / Qubit embedding layer
-class QubitEmbed(nn.Module):
+# 相位嵌入层 / Phase embedding layer
+class PMTEmbed(nn.Module):
     def __init__(
         self,
         dim: int,
@@ -149,8 +149,8 @@ def apply_rotary_emb(
 
 
 # 增强版注意力机制 / Enhanced attention mechanism
-class QubitAttention(nn.Module):
-    def __init__(self, args: QFConfig):
+class PMTAttention(nn.Module):
+    def __init__(self, args: PMTConfig):
         super().__init__()
         self.n_heads = args.n_heads
         self.n_kv_heads = args.n_heads if args.n_kv_heads is None else args.n_kv_heads
@@ -269,7 +269,7 @@ class QubitAttention(nn.Module):
 
 
 # 轻量级量子门控 / Lightweight qubit gating
-class LiteQubitGate(nn.Module):
+class LitePMTGate(nn.Module):
     def __init__(self, dim: int, hidden_dim: int, reduction_ratio: int = 8):
         super().__init__()
         self.phase_proj = nn.Sequential(
@@ -290,8 +290,8 @@ class LiteQubitGate(nn.Module):
 
 
 # 增强版前馈网络 / Enhanced feed-forward network
-class QubitFeedForward(nn.Module):
-    def __init__(self, config: QFConfig):
+class PMTFeedForward(nn.Module):
+    def __init__(self, config: PMTConfig):
         super().__init__()
         hidden_dim = 4 * config.dim
         hidden_dim = int(2 * hidden_dim / 3)
@@ -301,7 +301,7 @@ class QubitFeedForward(nn.Module):
         self.w1 = nn.Linear(config.dim, hidden_dim, bias=False)
         self.w2 = nn.Linear(hidden_dim, config.dim, bias=False)
         self.w3 = nn.Linear(config.dim, hidden_dim, bias=False)
-        self.qubit_gate = LiteQubitGate(
+        self.qubit_gate = LitePMTGate(
             dim=config.dim, hidden_dim=hidden_dim, reduction_ratio=8
         )
         self.dropout = nn.Dropout(config.dropout)
@@ -315,13 +315,13 @@ class QubitFeedForward(nn.Module):
 
 
 # 增强版 Transformer 块 / Enhanced Transformer block
-class QubitBlock(nn.Module):
-    def __init__(self, layer_id: int, config: QFConfig):
+class PMTBlock(nn.Module):
+    def __init__(self, layer_id: int, config: PMTConfig):
         super().__init__()
         self.attention_norm = RMSNorm(config.dim, eps=config.norm_eps)
         self.ffn_norm = RMSNorm(config.dim, eps=config.norm_eps)
-        self.attn = QubitAttention(config)
-        self.ffn = QubitFeedForward(config)
+        self.attn = PMTAttention(config)
+        self.ffn = PMTFeedForward(config)
 
         self.phase_update = nn.Sequential(
             nn.Linear(config.dim, config.dim),
@@ -386,17 +386,17 @@ class QubitBlock(nn.Module):
         return x, h_imag, past_kv
 
 
-# 增强版 QubitFormer 模型（张量化版本，消除 graph break）/ Enhanced QubitFormer model (tensorized version, eliminates graph break)
-class QubitFormer(PreTrainedModel, GenerationMixin):
-    config_class = QFConfig
+# 增强版 PhaseModulationTransforme 模型（张量化版本，消除 graph break）/ Enhanced PhaseModulationTransforme model (tensorized version, eliminates graph break)
+class PhaseModulationTransforme(PreTrainedModel, GenerationMixin):
+    config_class = PMTConfig
 
-    def __init__(self, params: QFConfig, **kwargs):
+    def __init__(self, params: PMTConfig, **kwargs):
         super().__init__(params, **kwargs)
         self.params = params
-        self.tok_embeddings = QubitEmbed(params.dim, params.vocab_size)
+        self.tok_embeddings = PMTEmbed(params.dim, params.vocab_size)
         self.dropout = nn.Dropout(params.dropout)
         self.layers = nn.ModuleList(
-            [QubitBlock(l, params) for l in range(params.n_layers)]
+            [PMTBlock(l, params) for l in range(params.n_layers)]
         )
         self.norm = RMSNorm(params.dim, eps=params.norm_eps)
         self.output = nn.Linear(params.dim, params.vocab_size, bias=False)
@@ -420,7 +420,7 @@ class QubitFormer(PreTrainedModel, GenerationMixin):
                 torch.nn.init.zeros_(module.bias)
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
-        elif isinstance(module, QubitBlock):
+        elif isinstance(module, PMTBlock):
             nn.init.constant_(module.phase_gate, 0.1)
             nn.init.constant_(module.extrapolation_stabilizer, 0.01)
 

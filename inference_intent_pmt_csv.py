@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-在仓库内自定义 QubitFormer 检查点（如 train_sft_intent 产出的 sft_intent_QF_en_512.pth）上，
+在仓库内自定义 PhaseModulationTransforme 检查点（如 train_sft_intent 产出的 sft_intent_PMT_en_512.pth）上，
 对 MedQA **intent** JSON（messages 含 system / user / assistant）批量推理并写 CSV。
 
 **输入模型侧**：仅将 `messages` 中 **system + user** 合并后包进 `<s>[INST] … [/INST]`（与二阶段 SFT 训练一致），
@@ -10,8 +10,8 @@
 
 用法（项目根目录）：
 
-  python inference_intent_qf_csv.py \\
-    --checkpoint out/sft_intent_QF_en_512.pth \\
+  python inference_intent_pmt_csv.py \\
+    --checkpoint out/sft_intent_PMT_en_512.pth \\
     --data_path dataset/RAG_MedQA_US_test_1273_intent.json \\
     --output_csv inference_intent_results.csv
 """
@@ -37,8 +37,8 @@ from inference import (
     postprocess_model_raw_output,
     resolve_extracted_choice,
 )
-from model.QFConfig import QFConfig
-from model.qbmodel import QubitFormer
+from model.PMTConfig import PMTConfig
+from model.pmtmodel import PhaseModulationTransforme
 
 ROOT = Path(__file__).resolve().parent
 
@@ -48,7 +48,7 @@ def main():
     parser.add_argument(
         "--checkpoint",
         type=str,
-        default=str(ROOT / "out" / "sft_intent_QF_en_512.pth"),
+        default=str(ROOT / "out" / "sft_intent_PMT_en_512.pth"),
         help="sft_intent_*.pth 权重路径",
     )
     parser.add_argument(
@@ -63,7 +63,7 @@ def main():
     )
     parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--dtype", choices=("bfloat16", "float16", "float32"), default="bfloat16")
-    parser.add_argument("--max_seq_len", type=int, default=4096, help="与训练时 QFConfig.max_seq_len 一致")
+    parser.add_argument("--max_seq_len", type=int, default=4096, help="与训练时 PMTConfig.max_seq_len 一致")
     parser.add_argument("--max_new_tokens", type=int, default=96)
     parser.add_argument("--min_new_tokens", type=int, default=4)
     parser.add_argument("--hidden_size", type=int, default=512)
@@ -104,7 +104,7 @@ def main():
         data = data[: args.limit]
 
     vocab_size = 32000
-    lm_config = QFConfig(
+    lm_config = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,
@@ -120,7 +120,7 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.truncation_side = "left"
 
-    model = QubitFormer(lm_config)
+    model = PhaseModulationTransforme(lm_config)
     state = torch.load(ckpt, map_location="cpu")
     model.load_state_dict(state, strict=False)
     model = model.to(device)
@@ -128,7 +128,7 @@ def main():
 
     if device.type == "cpu":
         for m in model.modules():
-            if m.__class__.__name__ == "QubitAttention":
+            if m.__class__.__name__ == "PMTAttention":
                 m.flash = False
 
     if args.dtype == "bfloat16" and device.type == "cuda":

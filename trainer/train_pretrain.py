@@ -16,10 +16,10 @@ from torch.utils.data import DataLoader, DistributedSampler
 from contextlib import nullcontext
 from transformers import AutoTokenizer
 from transformers import LlamaTokenizerFast
-from model.QFConfig import QFConfig
+from model.PMTConfig import PMTConfig
 
 from model.model import MiniMindForCausalLM
-from model.qbmodel import QubitFormer
+from model.pmtmodel import PhaseModulationTransforme
 from dataset.lm_zh_dataset import PretrainDataset as PretrainDatasetZh
 from dataset.lm_en_dataset import PretrainDataset as PretrainDatasetEn
 import torch._inductor.config as cfg
@@ -319,8 +319,8 @@ def init_model(lm_config, model_type, language):
         tokenizer = LlamaTokenizerFast.from_pretrained("../model/tokenizer_en")
 
     # Choose model based on model_type
-    if model_type == "QF":
-        model = QubitFormer(lm_config).to(args.device)
+    if model_type == "PMT":
+        model = PhaseModulationTransforme(lm_config).to(args.device)
     else:  # MM
         model = MiniMindForCausalLM(lm_config).to(args.device)
 
@@ -357,7 +357,7 @@ if __name__ == "__main__":
         "--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu"
     )
     parser.add_argument("--dtype", type=str, default="bfloat16")
-    parser.add_argument("--model_type", type=str, default="QF", help="QF or MM")
+    parser.add_argument("--model_type", type=str, default="PMT", help="PMT or MM")
     parser.add_argument("--language", type=str, default="zh", help="zh or en")
     parser.add_argument("--use_wandb", action="store_true")
     parser.add_argument("--wandb_project", type=str, default="MiniMind-Pretrain")
@@ -396,7 +396,7 @@ if __name__ == "__main__":
         vocab_size = 32000
 
     # Update config with dynamic vocab size
-    lm_config = QFConfig(
+    lm_config = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,

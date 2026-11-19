@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Cascade train: protocol-specific QubitFormer SFT (online upstream context).
+"""Cascade train: protocol-specific PhaseModulationTransforme SFT (online upstream context).
 
 Protocols:
-  qf_norag — non-retrieval branch + QubitFormer → out/run_cascade_norag/
-  qf_rag   — retrieval-augmented branch + QubitFormer → out/run_cascade_rag/
+  pmt_norag — non-retrieval branch + PhaseModulationTransforme → out/run_pmt_norag/
+  pmt_rag   — retrieval-augmented branch + PhaseModulationTransforme → out/run_pmt_rag/
 
-Training always initializes from the released pretrained QubitFormer weights.
-Inference must load the protocol-trained *_best.pth (see inference_cascade_qf.py).
+Training always initializes from the released pretrained PhaseModulationTransforme weights.
+Inference must load the protocol-trained *_best.pth (see inference_cascade_pmt.py).
 Upstream intermediate text is never written to disk.
 """
 
@@ -28,15 +28,15 @@ from transformers import LlamaTokenizerFast
 __package__ = "trainer"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from model.QFConfig import QFConfig
-from model.qbmodel import QubitFormer
-from model.qf_protocol import (
-    PROTOCOL_QF_NORAG,
-    PROTOCOL_QF_RAG,
+from model.PMTConfig import PMTConfig
+from model.pmtmodel import PhaseModulationTransforme
+from model.pmt_protocol import (
+    PROTOCOL_PMT_NORAG,
+    PROTOCOL_PMT_RAG,
     default_out_dir,
     prepare_sample_for_protocol,
     protocol_slot,
-    resolve_qf_init_ckpt,
+    resolve_pmt_init_ckpt,
 )
 from model.sidecar_runtime import SidecarPool, gold_letter, load_map
 from inference import format_inst_prompt_sft, merge_system_and_user_body
@@ -98,24 +98,24 @@ def masked_ce(logits, y, mask) -> torch.Tensor:
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Protocol-specific cascade QubitFormer SFT")
+    p = argparse.ArgumentParser(description="Protocol-specific cascade PhaseModulationTransforme SFT")
     p.add_argument(
         "--protocol",
-        choices=(PROTOCOL_QF_NORAG, PROTOCOL_QF_RAG),
+        choices=(PROTOCOL_PMT_NORAG, PROTOCOL_PMT_RAG),
         required=True,
-        help="qf_norag or qf_rag (separate QubitFormer checkpoints)",
+        help="pmt_norag or pmt_rag (separate PhaseModulationTransforme checkpoints)",
     )
     p.add_argument(
         "--out_dir",
         type=str,
         default="",
-        help="default: out/run_cascade_norag or out/run_cascade_rag by protocol",
+        help="default: out/run_pmt_norag or out/run_pmt_rag by protocol",
     )
     p.add_argument(
         "--init_ckpt",
         type=str,
         default="",
-        help="default: parameters/sft_QF_en_1024.pth (released pretrained QubitFormer)",
+        help="default: parameters/sft_PMT_en_1024.pth (released pretrained PhaseModulationTransforme)",
     )
     p.add_argument("--data_path", type=str, required=True, help="JSON list with question_with_options + answer_idx")
     p.add_argument("--epochs", type=int, default=1)
@@ -161,7 +161,7 @@ def main():
 
     out_dir = Path(args.out_dir) if args.out_dir else default_out_dir(args.protocol)
     os.makedirs(out_dir, exist_ok=True)
-    init_ckpt = resolve_qf_init_ckpt(args.init_ckpt or None)
+    init_ckpt = resolve_pmt_init_ckpt(args.init_ckpt or None)
 
     route_cfg = load_map(args.sidecar_map)
     force_slot = protocol_slot(args.protocol, route_cfg)
@@ -182,8 +182,8 @@ def main():
         rank = dist.get_rank()
         samples = [s for i, s in enumerate(samples) if i % world == rank]
 
-    tp = {force_slot: args.sidecar_tp0 if args.protocol == PROTOCOL_QF_NORAG else args.sidecar_tp1}
-    mem = {force_slot: args.sidecar_mem0 if args.protocol == PROTOCOL_QF_NORAG else args.sidecar_mem1}
+    tp = {force_slot: args.sidecar_tp0 if args.protocol == PROTOCOL_PMT_NORAG else args.sidecar_tp1}
+    mem = {force_slot: args.sidecar_mem0 if args.protocol == PROTOCOL_PMT_NORAG else args.sidecar_mem1}
     sidecar = SidecarPool(
         map_path=args.sidecar_map,
         backend=args.sidecar_backend,
@@ -196,7 +196,7 @@ def main():
 
     tok_dir = PROJECT_ROOT / "model" / "tokenizer_en"
     tokenizer = LlamaTokenizerFast.from_pretrained(str(tok_dir))
-    lm_config = QFConfig(
+    lm_config = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,
@@ -204,8 +204,8 @@ def main():
         max_seq_len=args.max_seq_len,
         flash_attn=True,
     )
-    model = QubitFormer(lm_config)
-    Logger(f"load QubitFormer init (train) ← {init_ckpt}")
+    model = PhaseModulationTransforme(lm_config)
+    Logger(f"load PhaseModulationTransforme init (train) ← {init_ckpt}")
     state = torch.load(str(init_ckpt), map_location="cpu")
     model.load_state_dict(state, strict=False)
     model = model.to(device)
@@ -216,7 +216,7 @@ def main():
     use_amp = args.dtype != "float32" and device.type == "cuda"
     scaler = torch.cuda.amp.GradScaler(enabled=(args.dtype == "float16"))
 
-    stem = f"cascade_QF_en_{args.hidden_size}"
+    stem = f"cascade_PMT_en_{args.hidden_size}"
     latest = out_dir / f"{stem}.pth"
     best = out_dir / f"{stem}_best.pth"
     best_loss = float("inf")

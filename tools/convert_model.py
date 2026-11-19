@@ -2,8 +2,8 @@
 Model conversion script: convert between torch format (state_dict) and HuggingFace Transformers format.
 模型转换脚本：在 torch 格式（state_dict）与 HuggingFace Transformers 格式之间转换。
 
-Supports two model types: QF (QubitFormer) and MM (MiniMindForCausalLM).
-支持两种模型类型：QF（QubitFormer）和 MM（MiniMindForCausalLM）。
+Supports two model types: PMT (PhaseModulationTransforme) and MM (MiniMindForCausalLM).
+支持两种模型类型：QF（PhaseModulationTransforme）和 MM（MiniMindForCausalLM）。
 
 Supports two languages: zh (Chinese) and en (English), which affect tokenizer and vocabulary size.
 支持两种语言：zh（中文）和 en（英文），影响分词器与词汇表大小。
@@ -19,9 +19,9 @@ __package__ = "scripts"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from transformers import LlamaTokenizerFast, AutoModelForCausalLM, AutoTokenizer
-from model.QFConfig import QFConfig
+from model.PMTConfig import PMTConfig
 from model.model import MiniMindForCausalLM
-from model.qbmodel import QubitFormer
+from model.pmtmodel import PhaseModulationTransforme
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -57,19 +57,19 @@ def convert_torch2transformers(
     Args:
         torch_path (str): Path to input .pth file / 输入的 .pth 文件路径
         transformers_path (str): Directory to save Transformers model / 保存 Transformers 模型的目录
-        lm_config (QFConfig): Model configuration / 模型配置
-        model_type (str): 'QF' or 'MM' / 模型类型
+        lm_config (PMTConfig): Model configuration / 模型配置
+        model_type (str): 'PMT' or 'MM' / 模型类型
         language (str): 'zh' or 'en' / 语言
     """
     # Instantiate model based on model_type / 根据模型类型实例化模型
-    if model_type == "QF":
-        # Register QubitFormer for auto classes / 注册 QubitFormer 到自动类
-        QFConfig.register_for_auto_class()
-        QubitFormer.register_for_auto_class("AutoModelForCausalLM")
-        model = QubitFormer(lm_config)
+    if model_type == "PMT":
+        # Register PhaseModulationTransforme for auto classes / 注册 PhaseModulationTransforme 到自动类
+        PMTConfig.register_for_auto_class()
+        PhaseModulationTransforme.register_for_auto_class("AutoModelForCausalLM")
+        model = PhaseModulationTransforme(lm_config)
     else:  # MM
         # Register MiniMindForCausalLM for auto classes / 注册 MiniMindForCausalLM 到自动类
-        QFConfig.register_for_auto_class()  # Using QFConfig for MM as well / MM 也使用 QFConfig
+        PMTConfig.register_for_auto_class()  # Using PMTConfig for MM as well / MM 也使用 PMTConfig
         MiniMindForCausalLM.register_for_auto_class("AutoModelForCausalLM")
         model = MiniMindForCausalLM(lm_config)
 
@@ -102,7 +102,7 @@ def convert_transformers2torch(transformers_path, torch_path, model_type, langua
     Args:
         transformers_path (str): Directory of Transformers model / Transformers 模型目录
         torch_path (str): Output .pth file path / 输出的 .pth 文件路径
-        model_type (str): 'QF' or 'MM' (used for trust_remote_code) / 模型类型（用于 trust_remote_code）
+        model_type (str): 'PMT' or 'MM' (used for trust_remote_code) / 模型类型（用于 trust_remote_code）
         language (str): Not directly used, but kept for consistency / 不直接使用，保留以保持接口一致
     """
     model = AutoModelForCausalLM.from_pretrained(
@@ -164,8 +164,8 @@ if __name__ == "__main__":
         "--model_type",
         type=str,
         default="MM",
-        choices=["QF", "MM"],
-        help="Model type: QF (QubitFormer) or MM (MiniMindForCausalLM)",
+        choices=["PMT", "MM"],
+        help="Model type: PMT (PhaseModulationTransforme) or MM (MiniMindForCausalLM)",
     )
     parser.add_argument(
         "--language",
@@ -220,7 +220,7 @@ if __name__ == "__main__":
         vocab_size = 32000
 
     # Build model configuration / 构建模型配置
-    lm_config = QFConfig(
+    lm_config = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,

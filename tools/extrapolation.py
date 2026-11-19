@@ -402,4 +402,4 @@ def main():
 if __name__ == "__main__":
     main()
 # python extrapolation.py --lang zh --model_args 'pretrained=./MiniMind_Base_300m,trust_remote_code=True'  --pg19_path  './data/chinese_novel'
-# python extrapolation.py --lang en --model_args 'pretrained=./QF_Base_300M,trust_remote_code=True'  --pg19_path  './data/pg19'
+# python extrapolation.py --lang en --model_args 'pretrained=./PMT_Base_300M,trust_remote_code=True'  --pg19_path  './data/pg19'

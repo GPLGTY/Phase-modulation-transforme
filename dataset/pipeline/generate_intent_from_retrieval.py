@@ -2,8 +2,8 @@
 """[DEPRECATED] 离线 Intent 生成已停用（D1）。
 
 训练 / 测试 / 推理请改用在线级联：
-  - trainer/train_cascade_qf.py
-  - inference_cascade_qf.py
+  - trainer/train_cascade_pmt.py
+  - inference_cascade_pmt.py
   - scripts/run_cascade_train.sh / run_cascade_infer.sh
 
 本文件仅保留兼容；新流程不再依赖离线 Intent JSON 生成。

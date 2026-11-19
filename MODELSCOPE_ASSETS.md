@@ -12,9 +12,9 @@ GitHub 仓库以源代码为主；检查点、语料、Embedding 与级联上游
 
 | 远程路径 | 本地路径 | 约大小 | 用途 |
 |----------|----------|--------|------|
-| `parameters/ckpt_a/` | `parameters/ckpt_a/` | ~131G | `qf_norag` 上游模块 |
-| `parameters/ckpt_b/` | `parameters/ckpt_b/` | ~149G | `qf_rag` 上游模块 |
-| `parameters/ckpt_c/` | `parameters/ckpt_c/` | ~65G | `no_qf` 上游模块 |
+| `parameters/ckpt_a/` | `parameters/ckpt_a/` | ~131G | `pmt_norag` 上游模块 |
+| `parameters/ckpt_b/` | `parameters/ckpt_b/` | ~149G | `pmt_rag` 上游模块 |
+| `parameters/ckpt_c/` | `parameters/ckpt_c/` | ~65G | `no_pmt` 上游模块 |
 
 ```bash
 pip install -U modelscope
@@ -34,7 +34,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 ```bash
 pip install -U modelscope
 
-# 常用：QubitFormer 初始化权重 + MedQA 检索样本
+# 常用：Phase-modulation-transforme 初始化权重 + MedQA 检索样本
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
 # 检索重建：Embedding + 教材 + FAISS + 原始题目
@@ -47,7 +47,7 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 
 | 文件 | 约大小 | 解压后位置 | 用途 |
 |------|--------|------------|------|
-| `01_parameters.tar` | 6.4G | `parameters/` | 预训练后的 QubitFormer（HF 与 `sft_QF_en_1024.pth`） |
+| `01_parameters.tar` | 6.4G | `parameters/` | 预训练后的 Phase-modulation-transforme（HF 与 `sft_PMT_en_1024.pth`） |
 | `04_medqa_rag_json.tar` | — | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA 检索增强样本（`generate_question_with_knowledges.py` 口径） |
 | `03b_corpus_openhermes2_5.tar` | 1.6G | `dataset/openhermes2_5.jsonl` | 英文通用指令微调（可选） |
 | `03d_corpus_sft_mini_512_zh.tar` | 1.2G | `dataset/sft_mini_512_zh.jsonl` | 中文指令微调（可选） |

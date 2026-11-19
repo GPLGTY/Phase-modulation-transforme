@@ -8,7 +8,7 @@
 #   FORCE_TRAIN=1         # always retrain before eval
 #   LIMIT=8               # debug subset
 #   DATASETS="medqa_us_dev=dataset/RAG_MedQA_US_dev_1272.json,medqa_us_test=dataset/RAG_MedQA_US_test_1273.json"
-#   PROTOCOLS="no_qf,qf_norag,qf_rag"
+#   PROTOCOLS="no_pmt,pmt_norag,pmt_rag"
 #   RESULTS_DIR=results/protocol_benchmark
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

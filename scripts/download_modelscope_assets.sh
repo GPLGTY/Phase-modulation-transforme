@@ -3,7 +3,7 @@
 #
 # Usage (project root):
 #   bash scripts/download_modelscope_assets.sh
-#   PACKS="01 04" bash scripts/download_modelscope_assets.sh   # QubitFormer init + MedQA retrieval JSON
+#   PACKS="01 04" bash scripts/download_modelscope_assets.sh   # Phase-modulation-transforme init + MedQA retrieval JSON
 #   PACKS="01 04" bash scripts/download_modelscope_assets.sh
 #   PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh   # rebuild retrieval remotely
 #
@@ -93,11 +93,13 @@ done
 
 if [[ "$SKIP_EXTRACT" != "1" ]]; then
   python3 "$ROOT/scripts/strip_to_retrieval_json.py" --dataset_dir "$ROOT/dataset" || true
+  # Normalize pack-01 filenames to project branding (accept either on-disk name)
+  python3 "$ROOT/scripts/normalize_pmt_weight_names.py" || true
 fi
 
 echo
 echo "done. check:"
-echo "  ls -lh parameters/sft_QF_en_1024.pth"
+echo "  ls -lh parameters/sft_PMT_en_1024.pth"
 echo "  ls -lh dataset/RAG_MedQA_US_test_1273.json"
 echo "  ls -d dataset/pipeline/models/infgrad/stella-base-en-v2 2>/dev/null || true"
 echo "  ls -d dataset/pipeline_data/textbooks/en_json 2>/dev/null || true"

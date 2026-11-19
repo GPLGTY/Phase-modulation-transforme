@@ -11,17 +11,20 @@ results/medqa_intent_test1273_reeval_*/
 .modelscope_publish_assets/
 
 # Large assets: host on ModelScope (see README); keep local copies untracked
+parameters/PMT_Base_300M/
+parameters/PMT_Struct_300M/
 parameters/QF_Base_300M/
 parameters/QF_Struct_300M/
 parameters/MiniMind_Base_300M/
 parameters/MiniMind_Struct_300M/
+parameters/sft_PMT_en_1024.pth
 parameters/sft_QF_en_1024.pth
 parameters/ckpt_a/
 parameters/ckpt_b/
 parameters/ckpt_c/
 out/run_sft_intent/*.pth
-out/run_cascade_norag/
-out/run_cascade_rag/
+out/run_pmt_norag/
+out/run_pmt_rag/
 dataset/SlimPajama-1B_full.jsonl
 dataset/openhermes2_5.jsonl
 dataset/pretrain_hq_zh.jsonl

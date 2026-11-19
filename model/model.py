@@ -3,7 +3,7 @@ import struct
 import inspect
 import time
 
-from .QFConfig import QFConfig
+from .PMTConfig import PMTConfig
 from typing import Any, Optional, Tuple, List
 import numpy as np
 import torch
@@ -96,7 +96,7 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 # 多头注意力层 | Multi-head attention layer
 class Attention(nn.Module):
-    def __init__(self, args: QFConfig):
+    def __init__(self, args: PMTConfig):
         super().__init__()
         self.n_kv_heads = args.n_heads if args.n_kv_heads is None else args.n_kv_heads
         assert args.n_heads % self.n_kv_heads == 0
@@ -165,7 +165,7 @@ class Attention(nn.Module):
 
 # 前馈网络层 | Feed-forward network layer
 class FeedForward(nn.Module):
-    def __init__(self, config: QFConfig):
+    def __init__(self, config: PMTConfig):
         super().__init__()
         if config.hidden_dim is None:
             hidden_dim = 4 * config.dim
@@ -183,8 +183,8 @@ class FeedForward(nn.Module):
 
 
 # Transformer块 | Transformer block
-class QubitFormerBlock(nn.Module):
-    def __init__(self, layer_id: int, config: QFConfig):
+class PhaseModulationTransformeBlock(nn.Module):
+    def __init__(self, layer_id: int, config: PMTConfig):
         super().__init__()
         self.n_heads = config.n_heads
         self.dim = config.dim
@@ -210,9 +210,9 @@ class QubitFormerBlock(nn.Module):
 
 # 主模型 | Main model
 class MiniMindForCausalLM(PreTrainedModel, GenerationMixin):
-    config_class = QFConfig
+    config_class = PMTConfig
 
-    def __init__(self, params: QFConfig, **kwargs):
+    def __init__(self, params: PMTConfig, **kwargs):
         # 将 config 和所有额外参数（如 dtype, device_map）传给父类
         super().__init__(params, **kwargs)
         # 如果仍想保留 self.params，可以同时赋值（指向同一对象）
@@ -221,7 +221,7 @@ class MiniMindForCausalLM(PreTrainedModel, GenerationMixin):
         self.tok_embeddings = nn.Embedding(params.vocab_size, params.dim)
         self.dropout = nn.Dropout(params.dropout)
         self.layers = nn.ModuleList(
-            [QubitFormerBlock(l, params) for l in range(self.n_layers)]
+            [PhaseModulationTransformeBlock(l, params) for l in range(self.n_layers)]
         )
         self.norm = RMSNorm(params.dim, eps=params.norm_eps)
         self.output = nn.Linear(params.dim, params.vocab_size, bias=False)

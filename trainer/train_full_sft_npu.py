@@ -17,9 +17,9 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler
 
 from transformers import LlamaTokenizerFast, AutoTokenizer
-from model.QFConfig import QFConfig
+from model.PMTConfig import PMTConfig
 from model.model import MiniMindForCausalLM
-from model.qbmodel import QubitFormer
+from model.pmtmodel import PhaseModulationTransforme
 
 warnings.filterwarnings("ignore")
 
@@ -150,8 +150,8 @@ def init_model(lm_config, model_type, language):
         tokenizer = LlamaTokenizerFast.from_pretrained("../model/tokenizer_en")
 
     # 2. Instantiate model by model type / 按模型类型实例化模型
-    if model_type == "QF":
-        model = QubitFormer(lm_config)
+    if model_type == "PMT":
+        model = PhaseModulationTransforme(lm_config)
     else:  # MM
         model = MiniMindForCausalLM(lm_config)
 
@@ -245,8 +245,8 @@ if __name__ == "__main__":
         "--model_type",
         type=str,
         default="MM",
-        choices=["QF", "MM"],
-        help="Model type: QF (QubitFormer) or MM (MiniMindForCausalLM)",
+        choices=["PMT", "MM"],
+        help="Model type: PMT (PhaseModulationTransforme) or MM (MiniMindForCausalLM)",
     )
     parser.add_argument(
         "--language",
@@ -270,8 +270,8 @@ if __name__ == "__main__":
     else:  # en
         vocab_size = 32000
 
-    # Create model configuration using QFConfig (includes vocab_size) / 使用QFConfig创建模型配置（包含词汇表大小）
-    lm_config = QFConfig(
+    # Create model configuration using PMTConfig (includes vocab_size) / 使用PMTConfig创建模型配置（包含词汇表大小）
+    lm_config = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,

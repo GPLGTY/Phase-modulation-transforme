@@ -15,9 +15,9 @@ from torch import optim, nn
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler
 from transformers import AutoTokenizer, LlamaTokenizerFast
-from model.QFConfig import QFConfig
+from model.PMTConfig import PMTConfig
 from model.model import MiniMindForCausalLM
-from model.qbmodel import QubitFormer
+from model.pmtmodel import PhaseModulationTransforme
 
 import logging
 
@@ -166,8 +166,8 @@ def init_model(lm_config, model_type, language):
 
     # 2. Create model instance based on model type
     # Instantiate model by model type
-    if model_type == "QF":
-        model = QubitFormer(lm_config)
+    if model_type == "PMT":
+        model = PhaseModulationTransforme(lm_config)
     else:  # MM
         model = MiniMindForCausalLM(lm_config)
 
@@ -266,8 +266,8 @@ if __name__ == "__main__":
         "--model_type",
         type=str,
         default="MM",
-        choices=["QF", "MM"],
-        help="Model type: QF (QubitFormer) or MM (MiniMindForCausalLM)",
+        choices=["PMT", "MM"],
+        help="Model type: PMT (PhaseModulationTransforme) or MM (MiniMindForCausalLM)",
     )
     parser.add_argument(
         "--language",
@@ -288,7 +288,7 @@ if __name__ == "__main__":
 
     # Create model configuration (includes vocabulary size)
     # 创建模型配置（包含词汇表大小）
-    lm_config = QFConfig(
+    lm_config = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,

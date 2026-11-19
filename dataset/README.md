@@ -27,7 +27,7 @@ PACKS="03b 03d" bash scripts/download_modelscope_assets.sh     # 指令微调语
 
 主要字段：`id`、`question` / `question_with_options`、`options`、`answer_idx`、`retrieve_info`（检索增强时）等。
 
-公开语料备份：https://www.modelscope.cn/datasets/longview/QubitFormerDataset
+公开语料备份见根目录 README / MODELSCOPE_ASSETS 说明。
 
 训练数据读取类：`lm_en_dataset.py` / `lm_zh_dataset.py`（请保留）。
 
