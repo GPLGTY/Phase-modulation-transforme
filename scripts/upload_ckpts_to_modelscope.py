@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REPO_ID = "GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering"
+REPO_ID = "zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering"
 ALL_SLOTS = [
     (ROOT / "parameters" / "ckpt_a", "parameters/ckpt_a"),
     (ROOT / "parameters" / "ckpt_b", "parameters/ckpt_b"),

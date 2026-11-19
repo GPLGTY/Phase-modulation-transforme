@@ -2,7 +2,7 @@
 
 大体积文件不纳入 Git。请自 ModelScope 获取并解压至本目录（或项目根下对应路径）。
 
-仓库：https://www.modelscope.cn/models/GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering  
+仓库：https://www.modelscope.cn/models/zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering  
 
 ```bash
 # 于项目根目录

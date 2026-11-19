@@ -73,7 +73,7 @@ pip install lm-eval==0.4.9
 
 GitHub 仓库以源代码为主；模型权重、语料与 Embedding 统一发布于 ModelScope。
 
-**ModelScope 仓库**：[`GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering`](https://www.modelscope.cn/models/GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
+**ModelScope 仓库**：[`zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering`](https://www.modelscope.cn/models/zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
 包含归档包 `01`/`04`/`05` 等，以及三条对照协议所需目录 `parameters/ckpt_a`、`parameters/ckpt_b`、`parameters/ckpt_c`。细节见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)。
 
 ### 上游生成模块检查点（对照协议必需）
@@ -82,7 +82,7 @@ GitHub 仓库以源代码为主；模型权重、语料与 Embedding 统一发�
 
 ```bash
 pip install -U modelscope
-REPO=GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
+REPO=zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
 
 python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_a/**'])"
 python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_b/**'])"

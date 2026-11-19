@@ -73,7 +73,7 @@ Additional notes: default training `NPROC=1`; prefer multi-GPU `device_map=auto`
 
 The GitHub repository primarily contains source code; checkpoints, corpora, and embeddings are published on ModelScope.
 
-**ModelScope repository:** [`GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering`](https://www.modelscope.cn/models/GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
+**ModelScope repository:** [`zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering`](https://www.modelscope.cn/models/zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
 Includes archive packs `01`–`05` and the three contrastive-protocol directories `parameters/ckpt_a`, `parameters/ckpt_b`, `parameters/ckpt_c`. Details: [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md).
 
 ### Upstream generation checkpoints (required for contrastive protocols)
@@ -82,7 +82,7 @@ Includes archive packs `01`–`05` and the three contrastive-protocol directorie
 
 ```bash
 pip install -U modelscope
-REPO=GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
+REPO=zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
 
 python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_a/**'])"
 python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_b/**'])"

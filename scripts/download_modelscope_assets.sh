@@ -8,7 +8,7 @@
 #   PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh   # rebuild retrieval remotely
 #
 # Env:
-#   MODELSCOPE_REPO   default GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
+#   MODELSCOPE_REPO   default zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
 #   DOWNLOAD_DIR      default $ROOT/.modelscope_packs
 #   PACKS             space-separated: 01 03b 03d 04 05 06 07 08
 #   SKIP_EXTRACT=1
@@ -17,7 +17,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-MODELSCOPE_REPO="${MODELSCOPE_REPO:-GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering}"
+MODELSCOPE_REPO="${MODELSCOPE_REPO:-zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering}"
 DOWNLOAD_DIR="${DOWNLOAD_DIR:-$ROOT/.modelscope_packs}"
 PACKS="${PACKS:-01 04}"
 SKIP_EXTRACT="${SKIP_EXTRACT:-0}"

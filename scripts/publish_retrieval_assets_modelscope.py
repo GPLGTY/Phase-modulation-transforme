@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = Path(r"g:\mycodes\data_clean_gp")
-REPO_ID = "GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering"
+REPO_ID = "zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering"
 WORK = ROOT / ".modelscope_publish_assets"
 PACK_DIR = WORK / "packs"
 STAGE = WORK / "stage"

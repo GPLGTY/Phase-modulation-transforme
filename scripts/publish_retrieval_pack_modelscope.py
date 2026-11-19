@@ -16,7 +16,7 @@ import tarfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REPO_ID = "GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering"
+REPO_ID = "zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering"
 WORK = ROOT / ".modelscope_publish"
 PACK_DIR = WORK / "packs"
 STRIP_DIR = WORK / "stripped"

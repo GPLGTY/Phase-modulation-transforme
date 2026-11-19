@@ -2,9 +2,9 @@
 
 大体积资源托管于：
 
-**https://www.modelscope.cn/models/GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering**
+**https://www.modelscope.cn/models/zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering**
 
-仓库标识：`GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering`
+仓库标识：`zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering`
 
 GitHub 仓库以源代码为主；检查点、语料、Embedding 与级联上游模块按下列方式获取后，本地路径与训练 / 评测脚本的默认配置一致。
 
@@ -18,7 +18,7 @@ GitHub 仓库以源代码为主；检查点、语料、Embedding 与级联上游
 
 ```bash
 pip install -U modelscope
-REPO=GPLYMX/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
+REPO=zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
 
 python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_a/**'])"
 python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_b/**'])"
