@@ -17,7 +17,7 @@ Produced by `generate_question_with_knowledges.py`. The **integrated pipeline us
 
 | Path | Meaning |
 |------|---------|
-| `aggregated_accuracy_summary.csv` | Accuracy summary across settings (columns: `dataset`, train/inference ntk flags, `source_dir`, `copied_dir`, `temperature`, `ntk_alpha`, `n_total`, `n_scored`, `n_match`, `accuracy`, `elapsed_sec`, `output_csv`) |
+| `aggregated_accuracy_summary.csv` | Accuracy summary across settings (columns: `dataset`, train/inference ntk flags, `source_dir`, `copied_dir`, `temperature`, `ntk_alpha`, `n_total`, `accuracy`, `output_csv`) |
 | `USMLE__TRAINING-*__Inference-*/` | USMLE ablation tables |
 | `MEDMCQA__TRAINING-*__Inference-*/` | MedMCQA ablation tables |
 | `summary.csv` / `manifest.json` / `README_对应说明.txt` | Per-subdirectory metadata |

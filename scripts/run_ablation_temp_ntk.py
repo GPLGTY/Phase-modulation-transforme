@@ -21,7 +21,6 @@ import argparse
 import csv
 import json
 import sys
-import time
 from pathlib import Path
 
 import torch
@@ -156,7 +155,6 @@ def run_one_combo(
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 
     n_ok = n_match = n_err = n_skip = 0
-    t0 = time.time()
     with open(output_csv, "w", encoding="utf-8-sig", newline="") as fout:
         writer = csv.DictWriter(fout, fieldnames=CSV_FIELDS, extrasaction="ignore")
         writer.writeheader()
@@ -215,19 +213,15 @@ def run_one_combo(
                 n_err += 1
             writer.writerow(row)
 
-    elapsed = time.time() - t0
     acc = (n_match / n_ok) if n_ok else 0.0
     return {
         "temperature": temperature,
         "ntk_alpha": ntk_alpha,
         "ntk_max_train_len": args.ntk_max_train_len,
         "n_total": len(samples),
-        "n_scored": n_ok,
-        "n_match": n_match,
         "n_error": n_err,
         "n_skip": n_skip,
         "accuracy": acc,
-        "elapsed_sec": round(elapsed, 1),
         "output_csv": str(output_csv),
     }
 
@@ -327,12 +321,9 @@ def main() -> None:
         "ntk_alpha",
         "ntk_max_train_len",
         "n_total",
-        "n_scored",
-        "n_match",
         "n_error",
         "n_skip",
         "accuracy",
-        "elapsed_sec",
         "output_csv",
     ]
     run_id = 0
@@ -367,7 +358,7 @@ def main() -> None:
             row["run_id"] = run_id
             summary_rows.append(row)
             print(
-                f"    acc={row['accuracy']:.4f} ({row['n_match']}/{row['n_scored']})",
+                f"    acc={row['accuracy']:.4f} (n_total={row['n_total']})",
                 flush=True,
             )
             with open(table_dir / "summary.csv", "w", encoding="utf-8-sig", newline="") as sf:

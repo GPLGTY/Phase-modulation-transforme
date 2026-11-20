@@ -184,8 +184,7 @@ def run_rag_eval(
     return {
         "dataset": dataset_name,
         "output_csv": str(out_path),
-        "n_scored": n_scored,
-        "n_match": n_ok,
+        "n_total": n_scored + n_skip,
         "n_skip": n_skip,
         "accuracy": round(acc, 4),
         "pmt_checkpoint": str(ckpt_used),

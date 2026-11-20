@@ -125,7 +125,7 @@ def allocate_result_summary_dir(results_root: Path | None = None) -> Path:
     return root / f"result_summary{i}"
 
 
-# Columns for results/*/aggregated_accuracy_summary.csv (no checkpoint/data_path/note/table_dir).
+# Columns for results/*/aggregated_accuracy_summary.csv.
 AGGREGATED_SUMMARY_FIELDS: tuple[str, ...] = (
     "dataset",
     "train_with_position_ntk_alpha",
@@ -135,10 +135,7 @@ AGGREGATED_SUMMARY_FIELDS: tuple[str, ...] = (
     "temperature",
     "ntk_alpha",
     "n_total",
-    "n_scored",
-    "n_match",
     "accuracy",
-    "elapsed_sec",
     "output_csv",
 )
 
@@ -200,10 +197,7 @@ def upsert_aggregated_accuracy_summary(
                 "temperature": row.get("temperature", ""),
                 "ntk_alpha": row.get("ntk_alpha", ""),
                 "n_total": row.get("n_total", ""),
-                "n_scored": row.get("n_scored", ""),
-                "n_match": row.get("n_match", ""),
                 "accuracy": row.get("accuracy", ""),
-                "elapsed_sec": row.get("elapsed_sec", ""),
                 "output_csv": out_csv,
             }
         )
