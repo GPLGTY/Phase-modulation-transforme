@@ -1,42 +1,42 @@
 # result_summary
 
-本目录存放 **USMLE（MedQA）** 与 **MedMCQA** 上的参考评测与温度 × NTK 消融结果（git 追踪）。
+This directory holds **USMLE (MedQA)** and **MedMCQA** reference evaluation and temperature × NTK ablation results (git-tracked).
 
-## 对外数据口径（与发布包一致）
+## External data schema (aligned with release packs)
 
-训练 / 评测 / 消融的输入均为检索流水线产物 JSON（ModelScope 包 `04` 等），例如：
+Train / eval / ablation inputs are retrieval-pipeline JSON products (ModelScope pack `04`, etc.), for example:
 
 - `dataset/RAG_MedQA_US_train_10178.json`
 - `dataset/RAG_MedQA_US_dev_1272.json`
 - `dataset/RAG_MedQA_US_test_1273.json`
 
-主要字段：`id`、`question_with_options`、`answer_idx`，检索增强时含 `retrieve_info`。  
-由 `generate_question_with_knowledges.py` 生成；**一体流程在线使用系统权重与 PMT**，不对外提供或落盘其它中间样本格式。
+Main fields: `id`, `question_with_options`, `answer_idx`, plus `retrieve_info` when retrieval-augmented.  
+Produced by `generate_question_with_knowledges.py`. The **integrated pipeline uses system weights and PMT online**; other intermediate sample formats are not released or written to disk.
 
-## 目录约定
+## Layout
 
-| 路径 | 含义 |
-|------|------|
-| `aggregated_accuracy_summary.csv` | 各设定准确率总表（列：dataset / train&inference ntk 标记 / source_dir / copied_dir / temperature / ntk_alpha / n_total / n_scored / n_match / accuracy / elapsed_sec / output_csv；不含 checkpoint、data_path、note、table_dir） |
-| `USMLE__TRAINING-*__Inference-*/` | USMLE 消融子表 |
-| `MEDMCQA__TRAINING-*__Inference-*/` | MedMCQA 消融子表 |
-| `summary.csv` / `manifest.json` / `README_对应说明.txt` | 子目录元数据 |
-| `eval_temp*_ntk*.csv` | 逐条结果 |
+| Path | Meaning |
+|------|---------|
+| `aggregated_accuracy_summary.csv` | Accuracy summary across settings (columns: `dataset`, train/inference ntk flags, `source_dir`, `copied_dir`, `temperature`, `ntk_alpha`, `n_total`, `n_scored`, `n_match`, `accuracy`, `elapsed_sec`, `output_csv`) |
+| `USMLE__TRAINING-*__Inference-*/` | USMLE ablation tables |
+| `MEDMCQA__TRAINING-*__Inference-*/` | MedMCQA ablation tables |
+| `summary.csv` / `manifest.json` / `README_对应说明.txt` | Per-subdirectory metadata |
+| `eval_temp*_ntk*.csv` | Per-sample results |
 
-`TRAINING` / `Inference` 标记表示所用 PMT 训练设定与本次推理设定标签（见各子目录说明），与温度、`ntk_alpha` 网格一并报告。
+The `TRAINING` / `Inference` labels mark the PMT training setting and this run’s inference setting (see each subdirectory), reported together with the temperature × `ntk_alpha` grid.
 
-## 明细 CSV 列
+## Detail CSV columns
 
-保留：`id`、`question_with_options`、`answer_idx`、`model_raw_output`、`extracted_choice`、`matches_answer_idx` 等。  
-**不包含**中间输入文本列。
+Kept: `id`, `question_with_options`, `answer_idx`, `model_raw_output`, `extracted_choice`, `matches_answer_idx`, etc.  
+Intermediate input-text columns are **not** included.
 
-## 新评测 / 消融写入规则
+## Writing new eval / ablation runs
 
-- 默认评测：`bash scripts/run_cascade_infer.sh` → `result_summary` 或 `result_summaryN`
-- 消融：`bash scripts/run_ablation_temp_ntk.sh` → 同上根目录下的 `{DATASET}__TRAINING-*__Inference-*/`
+- Default eval: `bash scripts/run_cascade_infer.sh` → `result_summary` or `result_summaryN`
+- Ablation: `bash scripts/run_ablation_temp_ntk.sh` → `{DATASET}__TRAINING-*__Inference-*/` under the same root
 
-若 `results/result_summary` 已存在，则自动使用 `result_summary1`、`result_summary2`…，**不覆盖**本目录历史结果。
+If `results/result_summary` already exists, new runs use `result_summary1`, `result_summary2`, … and **do not** overwrite this reference directory.
 
 ## MedMCQA
 
-ModelScope 当前仅有原题包 `08`；检索增强 JSON 需自流水线生成后再评测 / 消融。
+ModelScope currently provides raw questions only (pack `08`). Build retrieval-augmented JSON via the pipeline before eval / ablation.
