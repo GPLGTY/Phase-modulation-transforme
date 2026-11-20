@@ -17,7 +17,7 @@
 
 | 路径 | 含义 |
 |------|------|
-| `aggregated_accuracy_summary.csv` | 各设定准确率总表 |
+| `aggregated_accuracy_summary.csv` | 各设定准确率总表（列：dataset / train&inference ntk 标记 / source_dir / copied_dir / temperature / ntk_alpha / n_total / n_scored / n_match / accuracy / elapsed_sec / output_csv；不含 checkpoint、data_path、note、table_dir） |
 | `USMLE__TRAINING-*__Inference-*/` | USMLE 消融子表 |
 | `MEDMCQA__TRAINING-*__Inference-*/` | MedMCQA 消融子表 |
 | `summary.csv` / `manifest.json` / `README_对应说明.txt` | 子目录元数据 |

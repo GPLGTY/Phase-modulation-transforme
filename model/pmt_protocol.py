@@ -123,3 +123,96 @@ def allocate_result_summary_dir(results_root: Path | None = None) -> Path:
     while (root / f"result_summary{i}").exists():
         i += 1
     return root / f"result_summary{i}"
+
+
+# Columns for results/*/aggregated_accuracy_summary.csv (no checkpoint/data_path/note/table_dir).
+AGGREGATED_SUMMARY_FIELDS: tuple[str, ...] = (
+    "dataset",
+    "train_with_position_ntk_alpha",
+    "inference_with_position_ntk_alpha",
+    "source_dir",
+    "copied_dir",
+    "temperature",
+    "ntk_alpha",
+    "n_total",
+    "n_scored",
+    "n_match",
+    "accuracy",
+    "elapsed_sec",
+    "output_csv",
+)
+
+
+def upsert_aggregated_accuracy_summary(
+    result_root: Path,
+    *,
+    dataset: str,
+    train_with_position_ntk_alpha: bool | str,
+    inference_with_position_ntk_alpha: bool | str,
+    copied_dir: str,
+    summary_rows: list[dict],
+    source_dir: str | None = None,
+) -> Path:
+    """Replace rows for one ablation table in aggregated_accuracy_summary.csv."""
+    import csv
+
+    def _flag(v: bool | str) -> str:
+        s = str(v).strip().lower()
+        if s in ("1", "true", "t", "yes"):
+            return "True"
+        if s in ("0", "false", "f", "no"):
+            return "False"
+        return str(v)
+
+    agg_path = Path(result_root) / "aggregated_accuracy_summary.csv"
+    train_f = _flag(train_with_position_ntk_alpha)
+    infer_f = _flag(inference_with_position_ntk_alpha)
+    src = source_dir or f"results/{copied_dir}"
+
+    existing: list[dict] = []
+    if agg_path.is_file() and agg_path.stat().st_size > 0:
+        with agg_path.open(encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if (row.get("copied_dir") or "") == copied_dir:
+                    continue
+                if (row.get("dataset") or "") == dataset and _flag(
+                    row.get("train_with_position_ntk_alpha") or ""
+                ) == train_f and _flag(
+                    row.get("inference_with_position_ntk_alpha") or ""
+                ) == infer_f:
+                    continue
+                existing.append({k: row.get(k, "") for k in AGGREGATED_SUMMARY_FIELDS})
+
+    new_rows: list[dict] = []
+    for row in summary_rows:
+        out_csv = str(row.get("output_csv") or "")
+        # Prefer path under results/result_summary...
+        if out_csv and not out_csv.replace("\\", "/").startswith("results/"):
+            out_csv = f"results/{Path(result_root).name}/{copied_dir}/{Path(out_csv).name}"
+        new_rows.append(
+            {
+                "dataset": dataset,
+                "train_with_position_ntk_alpha": train_f,
+                "inference_with_position_ntk_alpha": infer_f,
+                "source_dir": src,
+                "copied_dir": copied_dir,
+                "temperature": row.get("temperature", ""),
+                "ntk_alpha": row.get("ntk_alpha", ""),
+                "n_total": row.get("n_total", ""),
+                "n_scored": row.get("n_scored", ""),
+                "n_match": row.get("n_match", ""),
+                "accuracy": row.get("accuracy", ""),
+                "elapsed_sec": row.get("elapsed_sec", ""),
+                "output_csv": out_csv,
+            }
+        )
+
+    agg_path.parent.mkdir(parents=True, exist_ok=True)
+    with agg_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=list(AGGREGATED_SUMMARY_FIELDS), extrasaction="ignore"
+        )
+        writer.writeheader()
+        writer.writerows(existing + new_rows)
+    return agg_path

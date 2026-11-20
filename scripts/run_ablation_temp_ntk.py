@@ -39,6 +39,7 @@ from model.pmt_protocol import (
     prepare_sample_for_protocol,
     protocol_slot,
     resolve_pmt_infer_ckpt,
+    upsert_aggregated_accuracy_summary,
 )
 from model.pmtmodel import PhaseModulationTransformer
 from model.sidecar_runtime import SidecarPool, gold_letter, load_map
@@ -394,6 +395,17 @@ def main() -> None:
         f"PMT：{ckpt_used}\n",
         encoding="utf-8",
     )
+    if summary_rows:
+        agg = upsert_aggregated_accuracy_summary(
+            root,
+            dataset=args.dataset_name.upper(),
+            train_with_position_ntk_alpha=args.train_ntk,
+            inference_with_position_ntk_alpha=args.infer_ntk,
+            copied_dir=table_dir.name,
+            summary_rows=summary_rows,
+            source_dir=str(table_dir.as_posix()),
+        )
+        print(f"aggregated -> {agg}", flush=True)
     print(f"done -> {table_dir}", flush=True)
 
 

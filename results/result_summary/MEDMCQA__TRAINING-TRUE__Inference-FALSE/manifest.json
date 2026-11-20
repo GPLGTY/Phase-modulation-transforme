@@ -1,0 +1,89 @@
+{
+  "checkpoint": "",
+  "data_path": "dataset/medmcqa_dev_4183.json",
+  "n_samples": 4183,
+  "temperatures": [
+    0.7,
+    0.9,
+    1.1,
+    1.3,
+    1.5
+  ],
+  "ntk_alphas": [],
+  "ntk_max_train_len": 4096,
+  "max_seq_len": 4096,
+  "batch_size": 1,
+  "note": "Inference without position ntk_alpha; ntk column empty",
+  "runs": [
+    {
+      "temperature": 0.7,
+      "ntk_alpha": null,
+      "ntk_max_train_len": 4096,
+      "batch_size": 1,
+      "n_total": 4183,
+      "n_scored": 4183,
+      "n_match": 3129,
+      "n_error": 0,
+      "accuracy": 0.7480277312933301,
+      "elapsed_sec": 0.0,
+      "output_csv": "result_summary/MEDMCQA__TRAINING-TRUE__Inference-FALSE/eval_temp0p7.csv",
+      "run_id": 1
+    },
+    {
+      "temperature": 0.9,
+      "ntk_alpha": null,
+      "ntk_max_train_len": 4096,
+      "batch_size": 1,
+      "n_total": 4183,
+      "n_scored": 4183,
+      "n_match": 3126,
+      "n_error": 0,
+      "accuracy": 0.7473105426727229,
+      "elapsed_sec": 0.0,
+      "output_csv": "result_summary/MEDMCQA__TRAINING-TRUE__Inference-FALSE/eval_temp0p9.csv",
+      "run_id": 2
+    },
+    {
+      "temperature": 1.1,
+      "ntk_alpha": null,
+      "ntk_max_train_len": 4096,
+      "batch_size": 1,
+      "n_total": 4183,
+      "n_scored": 4183,
+      "n_match": 3126,
+      "n_error": 0,
+      "accuracy": 0.7473105426727229,
+      "elapsed_sec": 0.0,
+      "output_csv": "result_summary/MEDMCQA__TRAINING-TRUE__Inference-FALSE/eval_temp1p1.csv",
+      "run_id": 3
+    },
+    {
+      "temperature": 1.3,
+      "ntk_alpha": null,
+      "ntk_max_train_len": 4096,
+      "batch_size": 1,
+      "n_total": 4183,
+      "n_scored": 4183,
+      "n_match": 3132,
+      "n_error": 0,
+      "accuracy": 0.7487449199139373,
+      "elapsed_sec": 0.0,
+      "output_csv": "result_summary/MEDMCQA__TRAINING-TRUE__Inference-FALSE/eval_temp1p3.csv",
+      "run_id": 4
+    },
+    {
+      "temperature": 1.5,
+      "ntk_alpha": null,
+      "ntk_max_train_len": 4096,
+      "batch_size": 1,
+      "n_total": 4183,
+      "n_scored": 4183,
+      "n_match": 3126,
+      "n_error": 0,
+      "accuracy": 0.7473105426727229,
+      "elapsed_sec": 0.0,
+      "output_csv": "result_summary/MEDMCQA__TRAINING-TRUE__Inference-FALSE/eval_temp1p5.csv",
+      "run_id": 5
+    }
+  ]
+}

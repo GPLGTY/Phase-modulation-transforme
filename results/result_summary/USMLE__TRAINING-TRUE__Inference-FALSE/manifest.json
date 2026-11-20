@@ -1,30 +1,23 @@
 {
-  "checkpoint": "out/run_sft_p3_5/sft_pmt_QF_en_1024_best.pth",
+  "checkpoint": "out/run_sft_True_False/sft_pmt_en_1024_best.pth",
   "data_path": "dataset/RAG_MedQA_US_test_1273.json",
   "n_samples": 1273,
   "temperatures": [
+    0.7,
+    0.9,
     1.1,
     1.3,
-    1.5,
-    0.7,
-    0.9
+    1.5
   ],
-  "ntk_alphas": [
-    0.8
-  ],
+  "ntk_alphas": [],
   "ntk_max_train_len": 4096,
   "max_seq_len": 4096,
   "batch_size": 1,
-  "lm_config": {
-    "dim": 1024,
-    "n_layers": 24,
-    "n_heads": 16,
-    "n_kv_heads": 4
-  },
+  "note": "Inference without position ntk_alpha; ntk column empty",
   "runs": [
     {
-      "temperature": 1.1,
-      "ntk_alpha": 0.8,
+      "temperature": 0.7,
+      "ntk_alpha": null,
       "ntk_max_train_len": 4096,
       "batch_size": 1,
       "n_total": 1273,
@@ -33,12 +26,12 @@
       "n_error": 0,
       "accuracy": 0.9355852317360566,
       "elapsed_sec": 990.8,
-      "output_csv": "results/ablation_p3_5/eval_temp1p1_ntk0p8.csv",
+      "output_csv": "result_summary/USMLE__TRAINING-TRUE__Inference-FALSE/eval_temp0p7.csv",
       "run_id": 1
     },
     {
-      "temperature": 1.3,
-      "ntk_alpha": 0.8,
+      "temperature": 0.9,
+      "ntk_alpha": null,
       "ntk_max_train_len": 4096,
       "batch_size": 1,
       "n_total": 1273,
@@ -47,12 +40,12 @@
       "n_error": 0,
       "accuracy": 0.9347996857816182,
       "elapsed_sec": 826.6,
-      "output_csv": "results/ablation_p3_5/eval_temp1p3_ntk0p8.csv",
+      "output_csv": "result_summary/USMLE__TRAINING-TRUE__Inference-FALSE/eval_temp0p9.csv",
       "run_id": 2
     },
     {
-      "temperature": 1.5,
-      "ntk_alpha": 0.8,
+      "temperature": 1.1,
+      "ntk_alpha": null,
       "ntk_max_train_len": 4096,
       "batch_size": 1,
       "n_total": 1273,
@@ -61,12 +54,12 @@
       "n_error": 0,
       "accuracy": 0.9355852317360566,
       "elapsed_sec": 735.3,
-      "output_csv": "results/ablation_p3_5/eval_temp1p5_ntk0p8.csv",
+      "output_csv": "result_summary/USMLE__TRAINING-TRUE__Inference-FALSE/eval_temp1p1.csv",
       "run_id": 3
     },
     {
-      "temperature": 0.7,
-      "ntk_alpha": 0.8,
+      "temperature": 1.3,
+      "ntk_alpha": null,
       "ntk_max_train_len": 4096,
       "batch_size": 1,
       "n_total": 1273,
@@ -75,12 +68,12 @@
       "n_error": 0,
       "accuracy": 0.9324430479183032,
       "elapsed_sec": 744.1,
-      "output_csv": "results/ablation_p3_5/eval_temp0p7_ntk0p8.csv",
+      "output_csv": "result_summary/USMLE__TRAINING-TRUE__Inference-FALSE/eval_temp1p3.csv",
       "run_id": 4
     },
     {
-      "temperature": 0.9,
-      "ntk_alpha": 0.8,
+      "temperature": 1.5,
+      "ntk_alpha": null,
       "ntk_max_train_len": 4096,
       "batch_size": 1,
       "n_total": 1273,
@@ -89,7 +82,7 @@
       "n_error": 0,
       "accuracy": 0.9332285938727416,
       "elapsed_sec": 741.8,
-      "output_csv": "results/ablation_p3_5/eval_temp0p9_ntk0p8.csv",
+      "output_csv": "result_summary/USMLE__TRAINING-TRUE__Inference-FALSE/eval_temp1p5.csv",
       "run_id": 5
     }
   ]

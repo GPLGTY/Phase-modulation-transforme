@@ -4,7 +4,7 @@ A. Disclose the error to the patient but leave it out of the operative report
 B. Disclose the error to the patient and put it in the operative report
 C. Tell the attending that he cannot fail to disclose this mistake
 D. Report the physician to the ethics committee
-E. Refuse to dictate the operative report",C. Tell the attending that he cannot fail to disclose this mistake,C,C,C,True,
+E. Refuse to dictate the operative report",C. Tell the attending that he cannot fail to disclose this mistake,C,C,C,False,
 1,step1,"A 67-year-old man with transitional cell carcinoma of the bladder comes to the physician because of a 2-day history of ringing sensation in his ear. He received this first course of neoadjuvant chemotherapy 1 week ago. Pure tone audiometry shows a sensorineural hearing loss of 45 dB. The expected beneficial effect of the drug that caused this patient's symptoms is most likely due to which of the following actions?
 A. Inhibition of thymidine synthesis
 B. Inhibition of proteasome
@@ -28,7 +28,7 @@ A. Renal papillary necrosis
 B. Allergic interstitial nephritis
 C. Cholesterol embolization
 D. Eosinophilic granulomatosis with polyangiitis
-E. Polyarteritis nodosa",C. Cholesterol embolization,C,C,C,True,
+E. Polyarteritis nodosa",C. Cholesterol embolization,C,C,C,False,
 3,step1,"A 39-year-old woman is brought to the emergency department because of fevers, chills, and left lower quadrant pain. Her temperature is 39.1°C (102.3°F), pulse is 126/min, respirations are 28/min, and blood pressure is 80/50 mm Hg. There is blood oozing around the site of a peripheral intravenous line. Pelvic examination shows mucopurulent discharge from the cervical os and left adnexal tenderness. Laboratory studies show:
 Platelet count 14,200/mm3
 Fibrinogen 83 mg/mL (N = 200–430 mg/dL)
@@ -38,50 +38,50 @@ A. Coagulase-positive, gram-positive cocci forming mauve-colored colonies on met
 B. Encapsulated, gram-negative coccobacilli forming grey-colored colonies on charcoal blood agar
 C. Spore-forming, gram-positive bacilli forming yellow colonies on casein agar
 D. Lactose-fermenting, gram-negative rods forming pink colonies on MacConkey agar
-E. Gamma-hemolytic, gram-positive cocci forming green colonies on vancomycin agar","D. Lactose-fermenting, gram-negative rods forming pink colonies on MacConkey agar",D,D,D,True,
+E. Gamma-hemolytic, gram-positive cocci forming green colonies on vancomycin agar","D. Lactose-fermenting, gram-negative rods forming pink colonies on MacConkey agar",D,D,D,False,
 4,step2&3,"A 35-year-old man comes to the physician because of itchy, watery eyes for the past week. He has also been sneezing multiple times a day during this period. He had a similar episode 1 year ago around springtime. He has iron deficiency anemia and ankylosing spondylitis. Current medications include ferrous sulfate, artificial tear drops, and indomethacin. He works as an elementary school teacher. His vital signs are within normal limits. Visual acuity is 20/20 without correction. Physical examination shows bilateral conjunctival injection with watery discharge. The pupils are 3 mm, equal, and reactive to light. Examination of the anterior chamber of the eye is unremarkable. Which of the following is the most appropriate treatment?
 A. Erythromycin ointment
 B. Ketotifen eye drops
 C. Warm compresses
 D. Fluorometholone eye drops
-E. Latanoprost eye drops",B. Ketotifen eye drops,B,B,B,True,
+E. Latanoprost eye drops",B. Ketotifen eye drops,B,B,B,False,
 5,step2&3,"A 39-year-old man presents to the emergency department because of progressively worsening chest pain and nausea that started at a local bar 30 minutes prior. The pain radiates to the epigastric area. He has a 5-year history of untreated hypertension. He has smoked 1 pack of cigarettes daily for the past 5 years and started abusing cocaine 2 weeks before his emergency room visit. The patient is diaphoretic and in marked distress. What should be the first step in management?
 A. Diltiazem
 B. Labetalol
 C. Nitroglycerin
 D. Propranolol
-E. Reassurance and continuous monitoring",E. Reassurance and continuous monitoring,E,E,E,True,
+E. Reassurance and continuous monitoring",E. Reassurance and continuous monitoring,E,E,E,False,
 6,step1,"A 68-year-old male comes to the physician for evaluation of right flank pain. He has a history of diabetes and peripheral artery disease. His blood pressure is 160/90 mm Hg. Physical examination shows abdominal tenderness and right flank tenderness. An ultrasound shows dilation of the right ureter and renal pelvis. Which of the following is the most likely underlying cause of this patient's condition?
 A. Renal artery stenosis
 B. Benign prostatic hyperplasia
 C. Diabetic nephropathy
 D. Common iliac artery aneurysm
-E. Urethral stricture",D. Common iliac artery aneurysm,D,D,D,True,
+E. Urethral stricture",D. Common iliac artery aneurysm,D,D,D,False,
 7,step2&3,"A 65-year-old man is brought to the emergency department 30 minutes after the onset of acute chest pain. He has hypertension and asthma. Current medications include atorvastatin, lisinopril, and an albuterol inhaler. He appears pale and diaphoretic. His pulse is 114/min and blood pressure is 130/88 mm Hg. An ECG shows ST-segment depressions in leads II, III, and aVF. Laboratory studies show an increased serum troponin T concentration. The patient is treated for acute coronary syndrome and undergoes percutaneous transluminal coronary angioplasty. At the time of discharge, echocardiography shows a left ventricular ejection fraction of 58%. In addition to aspirin, which of the following drugs should be added to this patient's medication regimen?
 A. Nifedipine
 B. Enoxaparin
 C. Clopidogrel
 D. Spironolactone
 E. Propranolol
-""",C. Clopidogrel,C,C,C,True,
+""",C. Clopidogrel,C,C,C,False,
 8,step2&3,"A 37-year-old-woman presents to her primary care physician requesting a new form of birth control. She has been utilizing oral contraceptive pills (OCPs) for the past 8 years, but asks to switch to an intrauterine device (IUD). Her vital signs are: blood pressure 118/78 mm Hg, pulse 73/min and respiratory rate 16/min. She is afebrile. Physical examination is within normal limits. Which of the following past medical history statements would make copper IUD placement contraindicated in this patient?
 A. A history of stroke or venous thromboembolism
 B. Current tobacco use
 C. Active or recurrent pelvic inflammatory disease (PID)
 D. Past medical history of breast cancer
-E. Known liver neoplasm",C. Active or recurrent pelvic inflammatory disease (PID),C,C,C,True,
+E. Known liver neoplasm",C. Active or recurrent pelvic inflammatory disease (PID),C,C,C,False,
 9,step1,"A 23-year-old woman comes to the physician because she is embarrassed about the appearance of her nails. She has no history of serious illness and takes no medications. She appears well. A photograph of the nails is shown. Which of the following additional findings is most likely in this patient?
 A. Silvery plaques on extensor surfaces
 B. Flesh-colored papules in the lumbosacral region
 C. Erosions of the dental enamel
 D. Pallor of the conjunctival mucosa
-E. Holosystolic murmur at the left lower sternal border",A. Silvery plaques on extensor surfaces,A,D,D,False,
+E. Holosystolic murmur at the left lower sternal border",A. Silvery plaques on extensor surfaces,A,C,C,False,
 10,step1,"A 24-year-old G2P1 woman at 39 weeks’ gestation presents to the emergency department complaining of painful contractions occurring every 10 minutes for the past 2 hours, consistent with latent labor. She says she has not experienced vaginal discharge, bleeding, or fluid leakage, and is currently taking no medications. On physical examination, her blood pressure is 110/70 mm Hg, heart rate is 86/min, and temperature is 37.6°C (99.7°F). She has had little prenatal care and uses condoms inconsistently. Her sexually transmitted infections status is unknown. As part of the patient’s workup, she undergoes a series of rapid screening tests that result in the administration of zidovudine during delivery. The infant is also given zidovudine to reduce the risk of transmission. A confirmatory test is then performed in the mother to confirm the diagnosis of HIV. Which of the following is most true about the confirmatory test?
 A. It determines the genotype of the virus
 B. It is a Southwestern blot, identifying the presence of DNA-binding proteins
 C. It is a Northern blot, identifying the presence of RNA
 D. It is a Northern blot, identifying the presence of DNA
-E. It is an HIV-1/HIV2 antibody differentiation immunoassay",E. It is an HIV-1/HIV2 antibody differentiation immunoassay,E,E,E,True,
+E. It is an HIV-1/HIV2 antibody differentiation immunoassay",E. It is an HIV-1/HIV2 antibody differentiation immunoassay,E,E,E,False,
 11,step2&3,"A 72-year-old man comes to the physician because of a 2-month history of fatigue and worsening abdominal pain. During this period, he also has excessive night sweats and shortness of breath on exertion. Over the past 3 months, he has had a 5.6-kg (12-lb) weight loss. He had a myocardial infarction 3 years ago. He has hypertension, diabetes mellitus, and chronic bronchitis. His medications include insulin, aspirin, lisinopril, and an albuterol inhaler. He has smoked half a pack of cigarettes for the past 45 years. Vital signs are within normal limits. The spleen is palpated 6 cm below the left costal margin. Laboratory studies show:
 Hemoglobin 6.4 g/dL
 Mean corpuscular volume 85 μm3
@@ -92,49 +92,49 @@ A. Cladribine
 B. Prednisone
 C. Imatinib
 D. Ruxolitinib
-E. Stem cell transplantation",D. Ruxolitinib,D,D,D,True,
+E. Stem cell transplantation",D. Ruxolitinib,D,D,D,False,
 12,step1,"A 20-year-old man comes to the physician because of worsening gait unsteadiness and bilateral hearing loss for 1 month. He has had intermittent tingling sensations on both cheeks over this time period. He has no history of serious medical illness and takes no medications. Audiometry shows bilateral sensorineural hearing loss. Genetic evaluation shows a mutation of a tumor suppressor gene on chromosome 22 that encodes merlin. This patient is at increased risk for which of the following conditions?
 A. Renal cell carcinoma
 B. Meningioma
 C. Astrocytoma
 D. Vascular malformations
-E. Telangiectasias",B. Meningioma,B,B,B,True,
+E. Telangiectasias",B. Meningioma,B,B,B,False,
 13,step1,"A 47-year-old executive schedules an appointment his physician for a routine medical check-up. He currently has no complaints and claims to be “as fit as a fiddle.” The physical examination findings are unremarkable, except for a mid-systolic murmur heard in the 2nd left intercostal space that radiates to the carotids on auscultation. The physician instructs the patient to stand from a supine position with the stethoscope still placed on his chest. Which of the following changes would occur with this maneuver?
 A. An increase in right atrial pressure
 B. An increase in left ventricular end-diastolic pressure
 C. An increase in pulmonary capillary wedge pressure
 D. A reduction in the slope of the pacemaker potential
-E. A reduction in diastolic filling time",E. A reduction in diastolic filling time,E,E,E,True,
+E. A reduction in diastolic filling time",E. A reduction in diastolic filling time,E,E,E,False,
 14,step1,"A microbiologist is studying the emergence of a virulent strain of the virus. After a detailed study of the virus and its life cycle, he proposes a theory: Initially, a host cell is co-infected with 2 viruses from the same virus family. Within the host cell, concomitant production of various genome segments from both viruses occurs. Ultimately, the different genome segments from the viruses are packaged into a unique and novel virus particle. The newly formed virus particle is both stable and viable and is a new strain from the virus family that caused the outbreak of infection. Which of the following viruses is capable of undergoing the above-mentioned process?
 A. Cytomegalovirus
 B. Epstein-Barr virus
 C. Human immunodeficiency virus
 D. Rotavirus
-E. Vaccinia virus",D. Rotavirus,D,D,D,True,
+E. Vaccinia virus",D. Rotavirus,D,D,D,False,
 15,step2&3,"A 59-year-old overweight woman presents to the urgent care clinic with the complaint of severe abdominal pain for the past 2 hours. She also complains of a dull pain in her back with nausea and vomiting several times. Her pain has no relation with food. Her past medical history is significant for recurrent abdominal pain due to cholelithiasis. Her father died at the age of 60 with some form of abdominal cancer. Her temperature is 37°C (98.6°F), respirations are 15/min, pulse is 67/min, and blood pressure is 122/98 mm Hg. Physical exam is unremarkable. However, a CT scan of the abdomen shows a calcified mass near her gallbladder. Which of the following diagnoses should be excluded first in this patient?
 A. Acute cholecystitis
 B. Gallbladder cancer
 C. Choledocholithiasis
 D. Pancreatitis
-E. Duodenal peptic ulcer",B. Gallbladder cancer,B,B,B,True,
+E. Duodenal peptic ulcer",B. Gallbladder cancer,B,B,B,False,
 16,step2&3,"A 7-year-old boy is brought to his pediatrician’s office for a follow-up visit. He was diagnosed with asthma when he was 3 years old and has since been on treatment for the condition. He is currently on a β-agonist inhaler because of exacerbation of his symptoms. He has observed that his symptoms are more prominent in springtime, especially when the new flowers are blooming. His mother has a backyard garden and whenever he goes out to play there, he experiences chest tightness with associated shortness of breath. He has been advised to take more precaution during this seasonal change and to stay away from pollen. He is also being considered for an experimental therapy, which attenuates the activity of certain mediators which cause his asthmatic attack. The targeted mediator favors the class switching of antibodies. A reduction in this mechanism will eventually reduce the exaggerated response observed during his asthmatic attacks, even when exposed to an allergen. Which of the following mediators is described in this experimental study?
 A. IL-5
 B. IL-2
 C. IL-10
 D. IL-13
-E. IL-4",E. IL-4,E,E,E,True,
+E. IL-4",E. IL-4,E,E,E,False,
 17,step2&3,"A 3-month-old boy is brought the emergency department by his parents after an episode of cyanosis and muscle hypotonia that resolved after 2 minutes. Diagnostic evaluation fails to discover an exact etiology of the boy's symptoms and the episode is classified as a brief resolved unexplained event (BRUE). The risk profile for BRUE in infants remains largely unknown. The pediatrician who saw the boy in the emergency department is trying to identify risk factors for BRUE. She is aware of several confounders, including age, socioeconomic background, and family history of medical illness. She recruits 75 infants under 1 year of age with BRUE and 75 infants without BRUE of the same age, socioeconomic background, and family history of medical illness. She then compares the two groups with regard to history of feeding problems and history of recent upper respiratory infection. Which of the following methods was conducted to control confounding bias in the study?
 A. Stratified analysis
 B. Blinding
 C. Restriction
 D. Randomization
-E. Matching",E. Matching,E,E,E,True,
+E. Matching",E. Matching,E,E,E,False,
 18,step2&3,"A 29-year-old man presents to the emergency department due to central chest pain over the past 3 days which is constant and unrelated to exertion. The pain is sharp, severe, increases when lying down, and improves with leaning forward. The pain also radiates to his shoulders and neck. The patient has no past medical history. He has smoked 10 cigarettes per day for the past 7 years and occasionally drinks alcohol. He presents with vital signs: blood pressure 110/70 mm Hg, regular radial pulse of 95/min, and temperature 37.3°C (99.1°F). On physical exam, a scratching sound of to-and-from character is audible over the left sternal border at end-expiration with the patient leaning forward. His chest X-ray is normal and ECG is shown in the picture. Which of the following is the optimal therapy for this patient?
 A. Indomethacin +/- omeprazole
 B. Ibuprofen + colchicine +/- omeprazole
 C. Prednisone + colchicine
 D. Pericardiocentesis
-E. Pericardiectomy",B. Ibuprofen + colchicine +/- omeprazole,B,B,B,True,
+E. Pericardiectomy",B. Ibuprofen + colchicine +/- omeprazole,B,B,B,False,
 19,step2&3,"A 46-year-old man is brought to the emergency department for evaluation of altered mental status. He was found on the floor in front of his apartment. He is somnolent but responsive when aroused. His pulse is 64/min, respiratory rate is 15/min, and blood pressure is 120/75 mm Hg. On physical examination, an alcoholic smell and slurred speech are noted. Neurological exam shows diminished deep tendon reflexes bilaterally and an ataxic gait. His pupils are normal. Blood alcohol concentration is 0.04%. An ECG shows no abnormalities. Which of the following is the most likely cause of this patient's symptoms?
 A. Hypoglycemia
 B. Cerebral ischemia
@@ -142,7 +142,7 @@ C. Ethanol intoxication
 D. Cannabis intoxication
 E. Benzodiazepine intoxication
 ""","E. Benzodiazepine intoxication
-""",E,C,C,False,
+""",E,E,E,True,
 20,step1,"A 77-year-old woman presents to the emergency room with the complaints of fever, malaise, and night sweats. She recently observed an enlargement of her axillary lymph nodes, which she examines on a weekly basis. She has a remote history of breast cancer in her 60s that was treated with radiation and chemotherapy. She also reports a history of extensive travel to Africa and a 30-pack-year history of smoking. On physical exam, several axillary lymph nodes are palpable with a large non-tender palpable mass in her right axilla measuring 10 x 8 cm. Fine-needle aspiration demonstrates what the pathologist describes as ""a centroblastic and immunoblastic cell presence, suspicious for non-Hodgkin’s lymphoma (NHL)–diffuse large B cell variant"". Which of the following risk factors is responsible for this patient’s condition?
 A. Travel to Africa
 B. Axillary lymph node involvement
@@ -307,7 +307,7 @@ A. 0.375
 B. 0.5
 C. 2
 D. 2.5
-E. 2.67",E. 2.67,E,E,E,True,
+E. 2.67",E. 2.67,E,C,C,False,
 39,step1,"A 67-year-old male is seen by neurology after he was noticed to be speaking strangely by his family. After acute treatment with tissue plasminogen activator (tPA), the patient is able to recover most of his speech. Subsequent neurologic exam finds that the patient is fluent while speaking and is able to comprehend both one and two step instructions. Noticeably the patient remains unable to complete tasks involving verbal repetition. Residual damage to which of the following structures is most likely responsible for this patient's syndrome?
 A. Arcuate fasciculus
 B. Inferior frontal gyrus
@@ -463,7 +463,7 @@ B. Thrombotic thrombocytopenic purpura
 C. Hemolytic uremic syndrome
 D. Immune thrombocytopenic purpura
 E. Disseminated intravascular coagulation
-""",C. Hemolytic uremic syndrome,C,C,C,True,
+""",C. Hemolytic uremic syndrome,C,A,A,False,
 59,step2&3,"A 17-year-old girl is referred by her dentist for a suspected eating disorder. She has been visiting the same dentist since childhood and for the past 2 years has had at least 2 visits for dental caries. She eventually admitted to him that she regularly induces vomiting by putting her fingers down her throat. She says she has been doing this for the last few years and purging at least once a week. More recently, she has been inducing emesis more often and even looked into diuretics as she feels that she is gaining more and more weight compared to her ‘skinny friends’. Her BMI is at the 50th percentile for her age and sex. Which of the following features is most consistent with this patient’s condition?
 A. Patients with this disorder are not further sub-typed
 B. Patients do not usually initiate treatment
@@ -762,7 +762,7 @@ A. Metoclopramide
 B. Haloperidol
 C. Bromocriptine
 D. Fluphenazine
-E. Risperidone",C. Bromocriptine,C,B,B,False,
+E. Risperidone",C. Bromocriptine,C,A,A,False,
 100,step2&3,"A 2-day-old male newborn is brought to the physician because of yellowing of the skin and sclerae for 16 hours. He had previously been well. He was born at 38 weeks' gestation via uncomplicated vaginal delivery and weighed 3.1 kg (6 lb 13 oz). The mother has no medical insurance and did not receive prenatal care. The newborn's 4-year-old brother has sickle cell disease. Examination shows jaundice. The abdomen is mildly distended. The liver is palpated 1 cm below the right costal margin and the spleen tip is palpated just below the left costal margin. Laboratory studies show:
 Hemoglobin 11 g/dL
 Reticulocytes 9%
@@ -1222,7 +1222,7 @@ B. History of psychosis
 C. Access to firearms
 D. Sleeping disorder
 E. Age
-""",A. Previous suicide attempt,A,A,A,True,
+""",A. Previous suicide attempt,A,C,C,False,
 154,step2&3,"A 4-year-old boy is brought to the physician because of a generalized rash for 3 days. During this period, he has had severe itching and was not able to sleep well. He has also had fever, headache, and some muscle pain. Five days ago, he had a runny nose which subsided with over-the-counter medications. He returned from a camping trip 1 week ago. He attends a daycare center. The patient is at the 55th percentile for height and at the 50th percentile for weight. His temperature is 38.2°C (100.7°F), pulse is 97/min, and blood pressure is 96/60 mm Hg. Examination of the skin shows several macules, papules, and crusted lesions over his face, trunk, and extremities. There are a few fluid-filled vesicles over his abdomen and back. There is no cervical lymphadenopathy. The remainder of the examination shows no abnormalities. Which of the following is the most likely diagnosis?
 A. Measles
 B. Urushiol-induced dermatitis
@@ -1353,7 +1353,7 @@ A. Cleft palate
 B. Epicanthal folds
 C. Micropthlamia
 D. Prominent occiput
-E. Webbed neck",D. Prominent occiput,D,E,E,False,
+E. Webbed neck",D. Prominent occiput,D,D,D,True,
 172,step2&3,"An 83-year-old man is admitted to the hospital with fever, weakness, and decreased responsiveness. He is diagnosed with urosepsis based on urinalysis and culture and started on ceftriaxone and intravenous fluids. By hospital day 3, he is clinically improving. During the evening, the patient becomes irritable. He is talking to someone despite nobody being present in the room. He is easily agitated and attempts to strike a nurse with a remote control to his TV. Subsequently, the patient keeps getting out of bed and trying to walk away despite being a fall risk. Which of the following is the most appropriate next step in management?
 A. Diphenhydramine
 B. Lorazepam
@@ -1642,7 +1642,7 @@ A. Lack of a comparison group
 B. No prevalence assessment
 C. Low number of patients
 D. Ascertainment bias
-E. Lack of risk calculation",E. Lack of risk calculation,E,B,B,False,
+E. Lack of risk calculation",E. Lack of risk calculation,E,A,A,False,
 213,step2&3,"A 67-year-old woman presents from home hospice with a change in her mental status. She has seemed more confused lately and is unable to verbalize her symptoms. Her temperature is 102°F (38.9°C), blood pressure is 117/65 mmHg, pulse is 110/min, respirations are 19/min, and oxygen saturation is 95% on room air. Physical exam is notable for a right upper quadrant mass that elicits discomfort when palpated. Ultrasound is notable for pericholecystic fluid and gallbladder wall thickening without any gallstones. Which of the following is the most likely diagnosis?
 A. Acalculous cholecystitis
 B. Calculous cholescystitis
@@ -1811,7 +1811,7 @@ A. Metronidazole and paromomycin
 B. Antifungal therapy
 C. Cholecystectomy
 D. Antibiotics and drainage
-E. Endoscopic retrograde cholangiopancreatography (ERCP)",D. Antibiotics and drainage,D,B,B,False,
+E. Endoscopic retrograde cholangiopancreatography (ERCP)",D. Antibiotics and drainage,D,A,A,False,
 233,step1,"A 36-year-old recent immigrant from India presents with a face similar to that seen in the image A. Examination of his face reveals skin that is thick and contains many lesions. The patient complains that he has experienced a loss of sensation in his toes and fingertips, which has caused him to injure himself often. Biopsy of the skin is likely to reveal bacteria that are:
 A. Cocci
 B. Acid-fast
@@ -2052,7 +2052,7 @@ A. 0%
 B. 25%
 C. 50%
 D. 75%
-E. 100%",E. 100%,E,A,A,False,
+E. 100%",E. 100%,E,[generated_token_ids=[29871]],,False,
 268,step1,"A 76-year-old man is brought to his physician's office by his wife due to progressively worsening hearing loss. The patient reports that he noticed a decrease in his hearing approximately 10 years ago. His wife says that he watches television at an elevated volume and appears to have trouble understanding what is being said to him, especially when there is background noise. He states that he also experiences constant ear ringing and episodes of unsteadiness. On physical examination, the outer ears are normal and otoscopic findings are unremarkable. The patient is unable to repeat the sentence said to him on whisper testing. When a vibrating tuning fork is placed in the middle of the patient's forehead, it is heard equally on both ears. When the vibrating tuning fork is placed by the ear and then on the mastoid process, air conduction is greater than bone conduction. Which of the following structures is most likely impaired in this patient?
 A. Tympanic membrane
 B. Malleus
@@ -2371,7 +2371,7 @@ A. Incidence
 B. Prevalence
 C. Hazard rate
 D. Relative risk
-E. Attributable risk",B. Prevalence,B,A,A,False,
+E. Attributable risk",B. Prevalence,B,B,B,True,
 311,step1,"A 53-year-old man comes to the physician because of a 2-month history of multiple episodes of small amounts of blood in his stools. Examination shows pale conjunctivae. His hemoglobin concentration is 8.3 g/dL and mean corpuscular volume is 72μm3. Colonoscopy shows a 2.3-cm polypoid mass in the ascending colon. A photomicrograph of a biopsy specimen of the lesion is shown. Which of the following processes is most likely to be involved in the pathogenesis of this patient's condition?
 A. Underexpression of COX-2
 B. Increased activity of c-KIT
@@ -2437,7 +2437,7 @@ A. Subcutaneous fondaparinux
 B. CT scan
 C. Inferior vena cava filter
 D. Ventilation-perfusion scan
-E. Lower extremity doppler",A. Subcutaneous fondaparinux,A,A,A,True,
+E. Lower extremity doppler",A. Subcutaneous fondaparinux,A,B,B,False,
 322,step1,"A 62-year-old man is brought to his primary care physician by his wife who is concerned about the patient's frequent falls. Approximately 6 months ago, she started noticing that he was walking more slowly than usual. He has fallen more than 6 times in the past month, and she is worried that he will sustain a serious injury if he does not stop falling. The patient is a retired banking executive and was active as a triathlete until the age of 60. He does not smoke and drinks 2-3 alcoholic beverages per day. His family history is notable for normal pressure hydrocephalus in his mother and Alzheimer dementia in his father. His temperature is 97.8°F (36.6°C), blood pressure is 131/81 mmHg, pulse is 68/min, and respirations are 19/min. On exam, his movements appear slowed and forced. He shuffles his feet when he walks. Tone is increased in his upper and lower extremities bilaterally. This patient's condition is most strongly associated with which of the following histologic findings on brain autopsy?
 A. Accumulations of beta-pleated sheets
 B. Atrophy of the caudate nucleus
@@ -2887,7 +2887,7 @@ A. Karyotyping of infant's chromosomes
 B. DNA test for CFTR mutation
 C. Fluorescent treponemal antibody absorption test
 D. Polymerase chain reaction for viral genes
-E. T-cell receptor excision circle analysis",D. Polymerase chain reaction for viral genes,D,E,E,False,
+E. T-cell receptor excision circle analysis",D. Polymerase chain reaction for viral genes,D,D,D,True,
 377,step2&3,"A 30-year-old primigravid woman at 22 weeks' gestation is brought to the emergency department by her husband for lethargy, nausea, and vomiting for 4 days. This morning she became drowsy. She returned from a business trip to Sudan 3 weeks ago. She denies eating any seafood while traveling. Medications include iron supplements and a multivitamin. Her immunizations are up-to-date and she has never received blood products. Her temperature is 38.9°C (102°F), pulse is 92/min, and blood pressure is 122/76 mm Hg. She is oriented to person and place. Examination shows jaundice and mild asterixis. Pelvic examination shows a uterus consistent in size with a 22-week gestation. Laboratory studies show:
 Hemoglobin 11.2 g/dL
 Prothrombin time 18 sec (INR=2.0)
@@ -3020,7 +3020,7 @@ A. PSA
 B. Digital rectal exam
 C. HbA1C
 D. Abdominal ultrasound
-E. Flexible sigmoidoscopy",A. PSA,A,E,E,False,
+E. Flexible sigmoidoscopy",A. PSA,A,A,A,True,
 391,step1,"A 34-year-old patient is brought to the emergency room after a motor vehicle accident. An EKG shows sinus tachycardia and chest radiograph reveals an enlarged cardiac silhouette. While observing sinus tachycardia on the patient's telemetry, you note that the radial pulse cannot be palpated during inspiration. What should be the next step in management of this patient?
 A. IV Heparin
 B. Pericardiocentesis
@@ -3032,7 +3032,7 @@ A. Interstitial lung disease
 B. Hypersensitivity pneumonitis
 C. Chronic obstructive pulmonary disease
 D. Bronchiectasis
-E. Bronchial asthma",C. Chronic obstructive pulmonary disease,C,E,E,False,
+E. Bronchial asthma",C. Chronic obstructive pulmonary disease,C,D,D,False,
 393,step2&3,"A 29-year-old G1P0 woman is giving birth at 38 weeks gestation to a  boy via vaginal delivery. As soon as the infant is clear of the vagina, a congenital malformation of the abdomen is observed. The infant is removed from the delivery room for further evaluation. Visual inspection shows loops of intestine protruding out of his abdomen on the right side. His APGAR scores are 7 at 1 minute and 9 at 5 minutes. His heart rate is 125/min, and his respirations are 45/min. All reflexes appear normal. There are no other visible defects. Which of the following is the most appropriate next step in management?
 A. Wrap the intestines in a sterile bowel bag
 B. Transfer the newborn to the NICU
@@ -3555,7 +3555,7 @@ A. It carries a good prognosis
 B. Ammonia level is the best initial test to confirm the diagnosis
 C. It is a diagnosis of exclusion
 D. It only occurs in patients with cirrhosis
-E. Electroencephalography (EEG) usually shows focal localising abnormality",C. It is a diagnosis of exclusion,C,D,D,False,
+E. Electroencephalography (EEG) usually shows focal localising abnormality",C. It is a diagnosis of exclusion,C,B,B,False,
 458,step1,"A 20-year-old healthy man is running on a treadmill for the last 30 minutes. He is in good shape and exercises 3 times per week. He takes no medications and denies smoking cigarettes, drinking alcohol, and illicit drug use. Prior to starting his run, his heart rate was 70/min, and the blood pressure was 114/74 mm Hg. Immediately after stopping his run, the heart rate is 130/min, and the blood pressure is 145/75 mm Hg. Which of the following is most likely responsible for the change in his heart rate and blood pressure?
 A. Baroreceptor reflex
 B. Increased activation of the vagal nuclei
@@ -3831,7 +3831,7 @@ A. Increased water intake
 B. Increased antidiuretic hormone secretion
 C. Increased adrenocorticotropin hormone secretion
 D. Decreased antidiuretic hormone secretion
-E. Decreased adrenocorticotropin hormone secretion",D. Decreased antidiuretic hormone secretion,D,C,C,False,
+E. Decreased adrenocorticotropin hormone secretion",D. Decreased antidiuretic hormone secretion,D,D,D,True,
 497,step2&3,"A 29-year-old woman presents to the physician with a blurred vision of her right eye for 2 days. She has pain around her right eye during eye movement. She takes no medications. At the clinic, her blood pressure is 110/70 mm Hg, the pulse is 72/min, respirations are 15/min, and the temperature is 36.5℃ (97.7℉). On physical examination, illumination of the left eye results in bilateral pupillary constriction while illumination of the right eye results in a mild bilateral pupillary dilation. Fundoscopic examination shows optic disk swelling in the right eye. The color vision test shows decreased perception in the right eye. The remainder of the physical examination shows no abnormalities. Specific additional history should be obtained regarding which of the following?
 A. Dry eyes
 B. High-risk sexual behaviour
@@ -4038,7 +4038,7 @@ A. Actin filament assembly
 B. T-cell receptor signaling
 C. Thymus organogenesis
 D. Microtubule polymerization
-E. B-cell maturation",B. T-cell receptor signaling,B,B,B,True,
+E. B-cell maturation",B. T-cell receptor signaling,B,D,D,False,
 525,step2&3,"A 67-year-old man comes to the clinic complaining of fatigue and dizziness for the past 2 months. He reports that he gets tired easily compared to his baseline and feels dizzy when he exerts himself (e.g., when he walks long distances). His past medical history is significant for hypertension that is controlled with lisinopril. A physical examination demonstrates moderate hepatomegaly and lymphadenopathy. His laboratory studies are shown below.
 
 Leukocyte count and differential:
@@ -4309,7 +4309,7 @@ A. Spironolactone
 B. Eplerenone
 C. Amiloride
 D. Triamterene
-E. Ethacrynic acid",B. Eplerenone,B,E,E,False,
+E. Ethacrynic acid",B. Eplerenone,B,B,B,True,
 554,step2&3,"A 30-year-old woman presents to the emergency department with a recent episode of chest pain. She says she was previously well and denies any history of similar symptoms. She reports that, at onset, she felt as if she was going to die and says her heart beating has been beating really fast. There was also profuse sweating, and she says she feels short of breath. She could not recall how long the event lasted but can remember that the symptoms did go away on their own by the time she arrived at the emergency department. Her vitals rapidly returned to normal while giving her medical history and she begins to look and act more calm. No significant past medical history or current medications.  Physical examination is unremarkable. Her electrocardiogram and initial cardiac enzymes are normal. Which the following is necessary to confirm the most likely diagnosis in this patient?
 A. 1 month of associated symptoms 
 B. Average of 1 disruptive event per week
@@ -4574,7 +4574,7 @@ A. Ringed sideroblasts
 B. Teardrop cells
 C. Smudge cells
 D. Reed-Sternberg cells
-E. Hypergammaglobulinemia",C. Smudge cells,C,D,D,False,
+E. Hypergammaglobulinemia",C. Smudge cells,C,C,C,True,
 591,step1,"A 24-year-old married woman presents to the emergency department with severe abdominal pain since last night. She also complains of scant vaginal bleeding. She says she visited a physician last year who said she had a pelvic infection, but she was never treated because of insurance issues. She also says her period has been delayed this month. She is afebrile. The pulse is 124/min and the blood pressure is 100/70 mm Hg. On examination, her abdomen is distended and tender. A pregnancy test was positive. A complication of infection with which of the following organisms most likely led to this patient’s condition?
 A. Candida albicans
 B. Neisseria gonorrhoeae
@@ -4604,7 +4604,7 @@ A. Prevent excess posterior translation of the tibia relative to the femur
 B. Prevent excess anterior translation of the tibia relative to the femur
 C. Resist excess varus force on the knee
 D. Resist excess valgus force on the knee
-E. Provide a cushion between the lateral tibial and femoral condyles",B. Prevent excess anterior translation of the tibia relative to the femur,B,A,A,False,
+E. Provide a cushion between the lateral tibial and femoral condyles",B. Prevent excess anterior translation of the tibia relative to the femur,B,C,C,False,
 596,step1,"Six hours after birth, a newborn boy is evaluated for tachypnea. He was delivered at 41 weeks' gestation via Caesarian section and the amniotic fluid was meconium-stained. His respiratory rate is 75/min. Physical examination shows increased work of breathing. X-rays of the abdomen and chest show no abnormalities. Echocardiography shows elevated pulmonary artery pressure. He is started on an inhaled medication that increases smooth muscle cGMP, and there is immediate improvement in his tachypnea and oxygenation status. Three hours later, the newborn is tachypneic and there is blue-grey discoloration of the lips, fingers, and toes. Which of the following is the most likely cause of this infant's cyanosis?
 A. Increase in concentration of serum myoglobin
 B. Closure of the ductus arteriosus
@@ -4967,7 +4967,7 @@ A. Femoral neck fracture
 B. Femoral shaft fracture
 C. Meniscal tear
 D. Osgood-Schlatter disease
-E. Proximal phalanx fracture",A. Femoral neck fracture,A,F,,False,
+E. Proximal phalanx fracture",A. Femoral neck fracture,A,A,A,True,
 642,step1,"A 40-year-old woman presents with severe shortness of breath. The patient is unable to provide a history due to her breathing difficulties. The patient’s roommate says that she came home and found her in this state. She also says that they both occasionally take sleeping pills to help them fall asleep. Physical examination reveals an obese female, dyspneic with diminished chest wall movements. The patient’s A-a gradient is calculated to be 10 mm Hg. Which of the following most likely accounts for this patient’s symptoms?
 A. Alveolar hypoperfusion
 B. Alveolar hypoventilation
@@ -5056,7 +5056,7 @@ A. Acute calculous cholecystitis
 B. Acute acalculous cholecystitis
 C. Biliary colic
 D. Acute pancreatitis
-E. Ascending cholangitis",A. Acute calculous cholecystitis,A,B,B,False,
+E. Ascending cholangitis",A. Acute calculous cholecystitis,A,A,A,True,
 654,step1,"A mother brings her 18-year-old daughter to your office because she has not menstruated yet. They recently immigrated from another country, and do not have any previous medical records. The adolescent girl looks relatively short, but otherwise looks healthy. She has no complaints except for mild intermittent lower abdominal pain for the past year. On physical examination, vitals are within normal limits. There is the presence of axillary hair, breast development, and pubic hair at Tanner stage 5. You explain to the mother and the patient that you need to perform a complete vaginal examination, however, both of them declined the procedure and would prefer that lab test be performed. Her labs are significant for the following:
 FSH 7 mIU/mL
 Normal values:  
@@ -5427,7 +5427,7 @@ A. Diabetic polyuria
 B. Overactive detrusor muscle
 C. Primary polydipsia
 D. Urethral hypermobility
-E. Vescicovaginal fistula",D. Urethral hypermobility,D,B,B,False,
+E. Vescicovaginal fistula",D. Urethral hypermobility,D,D,D,True,
 706,step2&3,"A 24-year-old woman presents to the emergency department after an episode of altered mental status. She was at a party when she suddenly fell to the floor. Her friends state that she was not responsive and was acting oddly. After the episode, the patient seemed confused and had no memory of the event. The patient has a past medical history of substance abuse, depression, and anxiety. Her temperature is 98.6°F (37.0°C), blood pressure is 117/69 mmHg, pulse is 80/min, respirations are 12/min, and oxygen saturation is 99% on room air. Physical exam reveals a girl who seems confused and responds to questions slowly. Her gait is stable, and she demonstrates 5/5 strength in her upper and lower extremities. Laboratory values and a urine dipstick test are performed as seen below:
 
 Toxicology:
@@ -5790,7 +5790,7 @@ A. Covalently X-links DNA
 B. Blocks microtubule formation
 C. Intercalates between DNA
 D. Modifies DNA transcription and protein synthesis
-E. Blocks tyrosine kinase",B. Blocks microtubule formation,B,D,D,False,
+E. Blocks tyrosine kinase",B. Blocks microtubule formation,B,B,B,True,
 751,step1,"A 1-day-old infant is in the neonatal intensive care unit due to respiratory failure from pulmonary hypoplasia. The mother is a healthy 32-year-old woman who did not have regular prenatal exams. On physical examination, you notice low-set ears and retrognathia with abnormal extremity development. Which of the following abnormalities is associated with the most likely cause of this patient's symptoms?
 A. Hepatosplenomegaly
 B. Macroorchidism
@@ -5915,7 +5915,7 @@ A. Start basal-bolus insulin
 B. Continue metformin monotherapy
 C. Add a sulfonylurea
 D. Add an alpha-glucosidase inhibitor
-E. Add a thiazolidinedione",C. Add a sulfonylurea,C,E,E,False,
+E. Add a thiazolidinedione",C. Add a sulfonylurea,C,A,A,False,
 763,step1,"A 42-year-old chronic alcoholic man was admitted to the hospital for inappropriate behavior and disturbed memory. He presents with severe retrograde memory loss, confusion, and confabulation. Neurologic examination showed horizontal nystagmus. He also has bilateral pretibial pitting edema and perioral erythema. CT studies of the brain were normal. The duty physician suspects the patient may be vitamin deficient. Which of the following reactions does the deficient vitamin mediate?
 A. Alpha-Ketoglutarate + NAD+ + CoA <=> Succinyl-CoA + CO2 + NADH
 B. Acetyl-CoA + Oxaloacetate + H2O <=> Citrate + CoA + H+
@@ -6152,13 +6152,13 @@ A. IL-28
 B. C5a
 C. TGF-β
 D. IFN-α
-E. IL-4",E. IL-4,E,A,A,False,
+E. IL-4",E. IL-4,E,E,E,True,
 798,step1,"A 29-year-old G1P0 female presents at 22 weeks gestation for her first prenatal care appointment. Physical exam demonstrates a uterine size greater than expected for her gestational age and taut, shiny skin with scattered striae on her abdomen. Ultrasound examination of the fetus reveals 2.5 L of amniotic fluid (normal 1.5-2.0 L) with an amniotic fluid index (AFI) of 34 (normal AFI 20-25). Which of the following fetal abnormalities or dysfunctions could have contributed to these abnormal ultrasound findings?
 A. Renal agenesis
 B. Pulmonary hypoplasia
 C. Duodenal atresia
 D. Posterior urethral valve
-E. Polycystic kidney disease",C. Duodenal atresia,C,D,D,False,
+E. Polycystic kidney disease",C. Duodenal atresia,C,E,E,False,
 799,step1,"A 68-year-old woman presents to the emergency room with chest pain. She reports sudden severe and crushing substernal chest pain that started 1 hour ago. Her past medical history is notable for hypertension, hyperlipidemia, diabetes mellitus, obesity, and a prior myocardial infarction requiring a coronary artery bypass graft 2 years ago. She takes aspirin, metoprolol, lisinopril, spironolactone, atorvastatin, and insulin. She is retired and lives a sedentary lifestyle at home. Her temperature is 98.8°F (37.1°C), blood pressure is 109/68 mmHg, pulse is 118/min, and respirations are 24/min. Before being able to start the physical examination, the patient loses consciousness. Her pulse is palpable but weak. Her blood pressure is now 88/50 mmHg and pulse is 130/min. Her skin is pale, cold, and clammy. An electrocardiogram demonstrates ST elevations in leads I, aVL, V3, V4, V5, and V6. A medication that primarily stimulates which of the following receptors would be most appropriate to improve the hemodynamic status of this patient?
 A. Alpha-1 adrenergic receptor
 B. Alpha-2 adrenergic receptor
@@ -7013,7 +7013,7 @@ C. Primary adrenal insufficiency
 D. Conversion disorder
 E. Factitious disorder imposed on another
 ""","E. Factitious disorder imposed on another
-""",E,C,C,False,
+""",E,E,E,True,
 918,step2&3,"A 66-year-old woman presents with urinary incontinence, difficulty urinating, incomplete voiding, and dull pain in the suprapubic region. She reports that she has not urinated for the past 2 days and that the urine leakage occurs during both day and night and is not associated with physical exertion. The medical history is significant for arterial hypertension and poorly controlled type 2 diabetes mellitus for 8 years, and depression for 3 years. She is prescribed amlodipine, valsartan, atorvastatin, metformin, and amitriptyline. Her weight is 75 kg (165 lb) and her height is 166 cm (5 ft 40 in). Her vital signs are as follows: blood pressure, 120/80 mm Hg; heart rate, 91/min; respiratory rate, 13/min; and temperature, 36.4℃ (97.5℉). The physical examination reveals lower abdominal tenderness with a distended urinary bladder that is palpated in the suprapubic region. The neurological examination shows decreased Achilles reflexes bilaterally, and diminished fine touch and vibratory sensation. On gynecologic examination, the cervix was normally positioned, mobile, and without any visible lesions. Bulging of the posterior vaginal wall was noted. The adnexa were not palpable. An ultrasound examination showed an overdistended urinary bladder with no structural abnormalities. Which of the following is  the next step in managing this patient?
 A. Installing a vaginal pessary
 B. Bladder catheterization
@@ -7111,7 +7111,7 @@ A. Complete blood count (CBC)
 B. Erythrocyte sedimentation rate (ESR)
 C. Rheumatoid factor (RF)
 D. MRI of the knee
-E. No further work-up needed",E. No further work-up needed,E,D,D,False,
+E. No further work-up needed",E. No further work-up needed,E,E,E,True,
 933,step2&3,"A 4-year-old girl is brought to the physician because of pallor and rash for 2 days. She had a 4-day history of diarrhea and vomiting that subsided two days ago. One month ago, she had a 3-day episode of high fever, followed by a rash with bright red discoloration over her cheeks for two days before subsiding without treatment. Her vaccinations are up-to-date. She appears pale and irritable. Her vital signs are within normal limits. Examination shows petechiae on her trunk and extremities. Abdominal examination shows diffuse abdominal tenderness with hyperactive bowel sounds. The remainder of the exam shows no abnormalities. Laboratory studies show:
 Hemoglobin 8 g/dL
 Mean corpuscular volume 82 fL
@@ -7170,7 +7170,7 @@ A. The patient’s age
 B. The patient’s race
 C. Nulliparity
 D. History in the previous pregnancy
-E. History of preeclampsia in a sibling",D. History in the previous pregnancy,D,A,A,False,
+E. History of preeclampsia in a sibling",D. History in the previous pregnancy,D,B,B,False,
 938,step2&3,"A 44-year-old obese African-American male presents to clinic with complaints of 3 days of fatigue and dark urine. He has had several similar episodes since birth, all of which resolved spontaneously. He has a 5-year history of poorly controlled type II diabetes mellitus and was started on glipizide one week ago. Prior to the episode, he felt well without any upper respiratory or gastrointestinal symptoms. He predominantly eats fast food, although he tried a new Lebanese restaurant about one month ago. Which of the following is the most likely cause of this patient's symptoms?
 A. Viral Infection
 B. Bacterial Infection
@@ -7194,7 +7194,7 @@ A. Pancreatic adenocarcinoma
 B. Gastric MALT lymphoma
 C. Esophageal varices
 D. Porcelain gallbladder
-E. Hepatic steatosis",A. Pancreatic adenocarcinoma,A,A,A,True,
+E. Hepatic steatosis",A. Pancreatic adenocarcinoma,A,C,C,False,
 942,step2&3,"A 40-year-old woman comes to the physician because of a 6-month history of difficulty sleeping and fatigue. Menses occur at irregular 35- to 50-day intervals and last 3–7 days. Her last menstrual period was 5 weeks ago. She has had an unintentional 10-kg (22-lb) weight gain over this period. She also reports decreased sexual desire and increased hair growth on her face and arms. There is no personal or family history of serious illness. She appears lethargic. Her temperature is 37°C (98.6°F), pulse is 80/min, and blood pressure is 150/90 mm Hg. Physical examination shows central obesity, increased pigmented hair over the chin and upper lip, and purple stretch marks on the abdomen. She has a prominent hump of fat over the base of the dorsum of her neck and decreased proximal muscle tone and strength. Serum studies show:
 Na+ 154 mEq/L
 K+ 2.8 mEq/L
@@ -7582,7 +7582,7 @@ A. Levothyroxine therapy during pregnancy
 B. Dietary restriction of phenylalanine
 C. Daily allopurinol intake
 D. Avoidance of fasting states
-E. High doses of vitamin B6",B. Dietary restriction of phenylalanine,B,E,E,False,
+E. High doses of vitamin B6",B. Dietary restriction of phenylalanine,B,B,B,True,
 988,step1,"A researcher hypothesizes that low birth weight is related to obesity later in life. He conducts a study with a 95% confidence interval with a p-value of 0.049 to disprove his null hypothesis. He rejects his null hypothesis and concludes that low birth weight is associated with obesity. Which of the following statements best associates with his study?
 A. Confidence interval should have been 90%.
 B. A type 2 error is not possible in this case.
@@ -8081,7 +8081,7 @@ A. Supraspinatus
 B. Infraspinatus
 C. Teres minor
 D. Subscapularis
-E. Deltoid",A. Supraspinatus,A,E,E,False,
+E. Deltoid",A. Supraspinatus,A,A,A,True,
 1055,step1,"A 9-year-old male visited his primary care physician for a check-up three months after a throat infection. Upon examination, the patient exhibits painless subcutaneous nodules on the back of the wrist, the outside elbow, and the front of the knees, as well as inflammation in the joints of the lower extremities. Which of the following symptoms is most likely to also be present in this patient?
 A. Renal failure
 B. Hepatomegaly
@@ -8285,7 +8285,7 @@ A. Rest and acetaminophen
 B. Ultrasonography
 C. Technetium bone scan
 D. CT scan
-E. Internal fixation",A. Rest and acetaminophen,A,A,A,True,
+E. Internal fixation",A. Rest and acetaminophen,A,E,E,False,
 1084,step2&3,"Thirty minutes after delivery, a 3600-g (7-lb 15-oz) newborn has noisy breathing, bluish discoloration of her lips, and intermittent respiratory distress. She was born at 38 weeks' gestation and required bag-mask resuscitation immediately after delivery. Pregnancy was uncomplicated. Her mother has noticed the bluish lip discoloration worsen when she fed and improve when she cried. The patient's pulse is 163/min, respirations are 62/min, and blood pressure is 60/30 mm Hg. The crying infant's lungs are clear to auscultation. Further evaluation of this patient is most likely to show which of the following?
 A. Diffuse reticulogranular densities on chest x-ray
 B. Boot-shaped heart on chest x-ray
@@ -8389,7 +8389,7 @@ A. 69XXY
 B. 45XO
 C. 23XX
 D. 47XYY
-E. 46XX",E. 46XX,E,A,A,False,
+E. 46XX",E. 46XX,E,C,C,False,
 1099,step1,"A 42-year-old woman comes to the clinic for a routine annual exam. She recently moved from New Jersey, and her medical records show a total colectomy. The patient reports that she has had annual colonoscopies since she was 10 years of age because her father had “a condition with his colon.” What is the genetic inheritance pattern of the patient’s disease?
 A. Autosomal dominant
 B. Autosomal recessive
@@ -8474,7 +8474,7 @@ A. He will not be able to plantar flex his foot.
 B. He will not be able to point his toe.
 C. He will have a foot drop.
 D. He will have pain with inversion and eversion of his foot.
-E. He will have pain while dorsiflexing his foot.",D. He will have pain with inversion and eversion of his foot.,D,C,C,False,
+E. He will have pain while dorsiflexing his foot.",D. He will have pain with inversion and eversion of his foot.,D,D,D,True,
 1109,step2&3,"A 46-year-old man comes to the emergency department because of a 4-week history of fatigue and headache that have gotten progressively worse. He has allergic asthma treated with inhaled salbutamol. He immigrated to the USA from Thailand 9 years ago. He lives by himself and works as a waiter in a restaurant. He has had 6 lifetime male sexual partners and uses condoms inconsistently. He drinks 1–2 beers daily. His temperature is 38.2°C (100.8°F), pulse is 88/min, and blood pressure is 128/76 mm Hg. Examination of the mouth shows several white patches on the tongue and oral mucosa that can be easily scraped off with a tongue blade. On mental status examination, the patient is somnolent and has short-term memory deficits. The remainder of the examination shows no abnormalities. Laboratory studies show:
 Hemoglobin 13.6 g/dL
 Leukocyte count 9,600/mm3
@@ -8691,7 +8691,7 @@ A. Pneumococcal vaccine
 B. Meningococcal vaccine
 C. Tetanus, diphtheria, and acellular pertussis booster (Tdap) vaccine
 D. Haemophilus influenza B (HIB) vaccine
-E. Human papillomavirus (HPV) vaccine","C. Tetanus, diphtheria, and acellular pertussis booster (Tdap) vaccine",C,D,D,False,
+E. Human papillomavirus (HPV) vaccine","C. Tetanus, diphtheria, and acellular pertussis booster (Tdap) vaccine",C,B,B,False,
 1134,step1,"A 24-year-old woman presents to the emergency department with a 2-week history of a foot ulcer. She says that she punctured her foot with a rusty nail while she was playing tennis and that the puncture wound has since progressed to a non-healing ulcer. Over the last 2 days, she has also been experiencing a fever and drainage from the wound. On presentation, she is found to have a slightly fruity smelling red ulcer with purulent drainage. Probing the ulcer goes all the way down to bone. Which of the following characteristics is true of the most likely cause of this patient's symptoms?
 A. Gram-negative bacilli
 B. Gram-negative diplococci
@@ -9152,7 +9152,7 @@ A. Double-negative pro-T cell
 B. Pre-T cell
 C. Double-positive T cell
 D. Single-positive CD4+ T cell
-E. Single-positive CD8+ T cell",C. Double-positive T cell,C,C,C,True,
+E. Single-positive CD8+ T cell",C. Double-positive T cell,C,B,B,False,
 1189,step2&3,"A 28-year-old male presents with a recent onset of upsetting dreams, anxiety, and disturbing flashbacks. The patient reports that he returned from active duty in Iraq 3 months ago and was adjusting to life back at home until about 7 weeks ago when he began having intense fear of loud noises and seeing sudden flashbacks to bombing attacks he endured during his time in Iraq. He had to take a leave from his army instructor duties as he was not able to handle the familiar settings of practice shooting ranges and sudden loud explosions during battalion training. After refusing to leave his house, he was finally persuaded by his wife to visit your clinic. What is the most likely diagnosis?
 A. Acute stress disorder
 B. Performance anxiety
@@ -9273,7 +9273,7 @@ A. 67%
 B. 33%
 C. 100%
 D. 75%
-E. 50%",A. 67%,A,C,C,False,
+E. 50%",A. 67%,A,B,B,False,
 1207,step1,"A 23-year-old man presents with swelling of the left knee. He noticed the swelling a day ago while preparing for the college basketball game. He has had approximately 10 different sexual partners in the past 3 months. Synovial fluid tap shows a WBC count of 90,000 cells/mm3. What is the mechanism of action of the drug which is indicated for the treatment of this patient’s most likely condition?
 A. Metabolic inhibitor
 B. Cell wall inhibitor
@@ -9620,7 +9620,7 @@ A. Metformin
 B. Simvastatin
 C. Aspirin
 D. Glyburide
-E. Lisinopril",B. Simvastatin,B,B,B,True,
+E. Lisinopril",B. Simvastatin,B,A,A,False,
 1253,step1,"A 7 -day-old newborn boy presents to the emergency department with a history of fever, irritability, and generalized erythema. During the first 2 days of clinical manifestations, the parents of the child tried to control the symptoms using acetaminophen; however, the newborn continued to be ill, and blisters were noticeable around the buttocks, hands, and feet. During the physical examination, the vital signs include body temperature 39.0°C (102.3°F), heart rate 130/min, and respiratory rate 45/min. Ears, nose, and oral mucosa preserved their integrity, while the skin presents with diffuse blanching erythema and flaccid blisters with a positive Nikolsky’s sign. What is the most likely diagnosis in this patient?
 A. Scarlet fever
 B. Scalded skin syndrome
@@ -9763,7 +9763,7 @@ A. Trial of diphenhydramine
 B. Complete caffeine cessation
 C. Stop evening exercise
 D. Alcoholic beverage prior to bedtime
-E. Scheduled afternoon naps",C. Stop evening exercise,C,D,D,False,
+E. Scheduled afternoon naps",C. Stop evening exercise,C,B,B,False,
 1271,step2&3,"A 19-year-old man is brought to the physician by his mother because she is worried about his strange behavior. Over the past 3 years, he has been dressing all in black and wears a long black coat, even in the summer. The mother reports that her son has always had difficulties fitting in. He does not have any friends and spends most of his time in his room playing online games. He is anxious at college because he is uncomfortable around other people, and his academic performance is poor. Rather than doing his coursework, he spends most of his time reading up on paranormal phenomena, especially demons. He says that he has never seen any demons, but sometimes there are signs of their presence. For example, a breeze in an enclosed room is likely the “breath of a demon”. Mental status examination shows laborious speech. The patient avoids eye contact. Which of the following is the most likely diagnosis?
 A. Social anxiety disorder
 B. Avoidant personality disorder
