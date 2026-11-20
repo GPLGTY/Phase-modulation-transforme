@@ -45,10 +45,8 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 
 | 文件 | 约大小 | 解压后位置 | 用途 |
 |------|--------|------------|------|
-| `01_parameters.tar` | 6.4G | `parameters/` | `PMT_Base_300M`、`pretrain_*.pth`（可选）、`sft_PMT_en_1024.pth` 等；主流程以 `sft_PMT_en_1024.pth` 为级联初始化 |
+| `01_parameters.tar` | 6.4G | `parameters/sft_PMT_en_1024.pth` | 已发布的 PMT 权重（训练初始化 / 可直接评测） |
 | `04_medqa_rag_json.tar` | — | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA / USMLE 检索增强样本 |
-| `03b_corpus_openhermes2_5.tar` | 1.6G | `dataset/openhermes2_5.jsonl` | 英文通用指令微调（可选） |
-| `03d_corpus_sft_mini_512_zh.tar` | 1.2G | `dataset/sft_mini_512_zh.jsonl` | 中文指令微调（可选） |
 | `05_embedding_stella.tar` | ~450M | `dataset/pipeline/models/` | Stella Embedding（en/zh） |
 | `06_textbooks.tar` | ~0.5G | `dataset/pipeline_data/textbooks/` | MedQA 教材 |
 | `07_vector_stores.tar` | ~2G | `dataset/pipeline_data/vector_stores/` | FAISS |
@@ -63,7 +61,6 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 |------|------|
 | 检索增强训练 / 评测（USMLE） | `ckpt_0` + `PACKS="01 04"` |
 | MedMCQA | 包 `08` 仅含**原始题目**；**尚无现成 MedMCQA RAG JSON 归档包**，需本地流水线生成或自备后放入 `dataset/RAG_MedMCQA_*.json` |
-| 通用指令微调 | 追加 `03b`（中文追加 `03d`） |
 | 自原始题库重建检索流水线 | `PACKS="05 06 07 08"` |
 
 ## 手动获取

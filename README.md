@@ -7,18 +7,18 @@ English: [README_EN.md](README_EN.md)
 
 GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 
-本仓库发布 **Phase-Modulation Retrieval-Augmented Transformer** 在医学选择题问答上的实现、数据构建与参考评测结果。默认在**检索增强**设定下运行完整流程：加载一体发布的系统权重与 PMT 检查点，完成选项字母预测并报告准确率。大体量资源托管于 ModelScope（见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)）。
+本仓库发布 **Phase-Modulation Retrieval-Augmented Transformer** 在医学选择题问答上的实现、数据构建与参考评测结果。默认在**检索增强**设定下运行完整流程：加载一体发布的系统权重与已发布的 PMT 检查点，完成选项字母预测并报告准确率。大体量资源托管于 ModelScope（见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)）。
 
-| 阶段 | 说明 | 典型产物 |
-|------|------|----------|
-| 通用指令对齐（可选） | OpenHermes 等通用对话 SFT | `parameters/sft_PMT_en_1024.pth` |
-| 检索增强训练 / 评测（主流程） | USMLE（MedQA）与 MedMCQA | `out/run_pmt/cascade_PMT_en_1024_best.pth`、`results/result_summary*` |
+使用者直接下载即可使用的权重（**无需**自行预训练或通用指令微调）：
 
-- **系统权重**：`parameters/ckpt_0/`（ModelScope）
-- **PMT 初始化**：`parameters/sft_PMT_en_1024.pth`（归档包 `01`）
-- **训练输出**：`out/run_pmt/`
-- **默认评测集**：USMLE、MedMCQA
-- **评测输出**：`results/result_summary`；若目录已存在则写入 `result_summary1`、`result_summary2`…（不覆盖）。明细 CSV **不含**中间输入文本列。
+| 资源 | 路径 | 说明 |
+|------|------|------|
+| 系统权重 | `parameters/ckpt_0/` | ModelScope 目录直传 |
+| PMT 发布权重 | `parameters/sft_PMT_en_1024.pth` | 归档包 `01`；检索增强训练 / 评测的默认初始化 |
+| 本仓库训练产物 | `out/run_pmt/cascade_PMT_en_1024_best.pth` | 在发布权重上做检索增强训练后得到 |
+| 评测输出 | `results/result_summary` 或 `result_summaryN/` | 目录已存在时自动递增，不覆盖；明细 CSV **不含**中间输入文本列 |
+
+默认评测集：USMLE、MedMCQA。
 
 历史温度 × NTK 消融结果见 `results/result_summary/`（git 追踪）。新消融：
 
@@ -62,7 +62,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 
 亦可在 ModelScope 页面按目录手动获取到本地 `parameters/ckpt_0/`。路由见 `model/sidecar_map.json`。
 
-另需 Phase-modulation-transformer 初始化权重（归档包 `01` 中的 `parameters/sft_PMT_en_1024.pth`），以及含 `question_with_options`、`answer_idx` 的样本 JSON（可含 `retrieve_info`）。
+另需已发布的 PMT 权重（归档包 `01` 中的 `parameters/sft_PMT_en_1024.pth`），以及含 `question_with_options`、`answer_idx` 的样本 JSON（可含 `retrieve_info`）。
 
 ### 归档包（`.tar`）批量获取
 
@@ -71,7 +71,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 ```bash
 pip install -U modelscope
 
-# Phase-modulation-transformer 初始化权重 + MedQA 检索样本
+# 已发布的 PMT 权重 + MedQA 检索样本
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
 # 检索重建：Embedding + 教材 + FAISS + 原始题目（含 MedMCQA）
@@ -85,9 +85,7 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 | ModelScope 文件 / 目录 | 本地路径 | 用途 |
 |------------------------|----------|------|
 | `parameters/ckpt_0` | `parameters/ckpt_0/` | 系统权重（检索增强一体流程） |
-| `01_parameters.tar` | `parameters/PMT_Base_300M/`、`parameters/pretrain_PMT_en_1024_final.pth`（或由 Base 转换）、`parameters/sft_PMT_en_1024.pth` | Phase-modulation-transformer 预训练权重与通用指令对齐 / 训练初始化检查点 |
-| `03b_corpus_openhermes2_5.tar` | `dataset/openhermes2_5.jsonl` | 英文通用指令微调语料 |
-| `03d_corpus_sft_mini_512_zh.tar` | `dataset/sft_mini_512_zh.jsonl` | 中文指令微调语料（可选） |
+| `01_parameters.tar` | `parameters/sft_PMT_en_1024.pth` | 已发布的 PMT 权重（训练初始化 / 可直接评测） |
 | `04_medqa_rag_json.tar` | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA / USMLE 检索增强样本 |
 | `05_embedding_stella.tar` | `dataset/pipeline/models/` | 检索用 Stella Embedding（en/zh） |
 | `06_textbooks.tar` | `dataset/pipeline_data/textbooks/` | MedQA 教材（en / zh_paragraph / zh_sentence） |
@@ -100,7 +98,6 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 |------|------|
 | 检索增强训练 / 评测（USMLE） | `ckpt_0` + `PACKS="01 04"` |
 | MedMCQA 评测 | 另按数据节生成 `dataset/RAG_MedMCQA_*.json`，或自备同口径文件 |
-| 通用指令微调 | 追加 `03b`（中文追加 `03d`） |
 | 自原始题库重建检索 | `PACKS="05 06 07 08"` |
 
 ## 快速开始
@@ -119,20 +116,17 @@ bash scripts/run_cascade_infer.sh
 
 ```
 Phase-modulation-transformer/
-├── model/                 # Phase-modulation-transformer 与系统权重路由 / 提示配置
-├── trainer/               # 通用指令对齐、检索增强训练
+├── model/                 # 模型与系统权重路由 / 提示配置
+├── trainer/               # 检索增强训练
 ├── inference_cascade_pmt.py
-├── tools/                 # 权重格式转换与长度外推
 ├── scripts/               # 训练 / 评测启动、ModelScope 资源脚本
 ├── dataset/
-│   ├── pipeline/          # MedQA 检索构建流水线与 Embedding
+│   ├── pipeline/          # 检索构建流水线与 Embedding
 │   ├── pipeline_data/     # 教材 / FAISS（PACKS 06+07）与运行时检索产物
-│   └── *.json(l)          # SFT 语料与评测样本
+│   └── *.json             # 评测 / 训练样本
 ├── parameters/
 │   ├── ckpt_0/            # 系统权重（ModelScope 目录直传）
-│   ├── PMT_Base_300M/     # 预训练 HF 权重（包 01，可选）
-│   ├── pretrain_PMT_en_1024_final.pth  # 预训练 Torch 权重（包 01 或本地转换）
-│   └── sft_PMT_en_1024.pth # 通用指令对齐后的训练初始化权重（包 01）
+│   └── sft_PMT_en_1024.pth # 已发布的 PMT 权重（包 01）
 ├── out/run_pmt/           # 检索增强训练产出的 PMT 检查点
 ├── results/result_summary/ # 参考评测与消融结果
 ├── requirements.txt
@@ -143,12 +137,10 @@ Phase-modulation-transformer/
 
 对外训练 / 评测 / 消融输入均为检索流水线产物 JSON（字段含 `question_with_options`、`answer_idx`，检索增强时含 `retrieve_info`）。**不**落盘其它中间样本格式。一体流程在线使用系统权重与 PMT。
 
-### 语料与样本清单（对应 `PACKS` 解压后）
+### 样本清单（对应 `PACKS` 解压后）
 
-| 阶段 | 路径 | 包 |
+| 用途 | 路径 | 包 |
 |------|------|-----|
-| 英文通用指令微调 | `dataset/openhermes2_5.jsonl` | `03b` |
-| 中文指令微调（可选） | `dataset/sft_mini_512_zh.jsonl` | `03d` |
 | MedQA US 训练集 | `dataset/RAG_MedQA_US_train_10178.json`（10178） | `04` |
 | MedQA US 验证集 | `dataset/RAG_MedQA_US_dev_1272.json`（1272） | `04` |
 | MedQA US 测试集 | `dataset/RAG_MedQA_US_test_1273.json`（1273） | `04` |
@@ -343,12 +335,10 @@ cp dataset/pipeline_data/questions_with_knowledge/MedMCQA/train/retrive_use_ques
 | 路径 | 说明 | 来源 |
 |------|------|------|
 | `parameters/ckpt_0/` | 系统权重；推理与训练时一体流程默认加载 | ModelScope 目录直传 |
-| `parameters/PMT_Base_300M/` | Phase-modulation-transformer **预训练**权重（Hugging Face）；自行跑 `train_full_sft.py` 时的前置模型 | 包 `01` |
-| `parameters/pretrain_PMT_en_1024_final.pth` | 同上，Torch 格式；`train_full_sft.py` **实际加载**此文件（可由 `PMT_Base_300M` 经 `tools/convert_model.py` 转换得到） | 包 `01` 或本地转换 |
-| `parameters/sft_PMT_en_1024.pth` | 通用指令微调产物；检索增强训练的默认初始化权重 | 包 `01` 或本地 SFT |
+| `parameters/sft_PMT_en_1024.pth` | 已发布的 PMT 权重；检索增强训练的默认初始化 | 包 `01` |
 | `out/run_pmt/cascade_PMT_en_1024_best.pth` | 检索增强训练产出的最佳 PMT 检查点；评测默认加载 | 本地训练 |
 
-若包中已有 `sft_PMT_en_1024.pth`，可跳过通用指令对齐，直接训练 / 评测。获取顺序建议：
+获取顺序建议：
 
 1. 下载系统权重 `parameters/ckpt_0/`（见上文 snapshot_download）
 2. `PACKS="01 04" bash scripts/download_modelscope_assets.sh` → 得到 `sft_PMT_en_1024.pth` 与 MedQA 检索 JSON
@@ -357,34 +347,60 @@ cp dataset/pipeline_data/questions_with_knowledge/MedMCQA/train/retrive_use_ques
 ## 训练与评测
 
 ```bash
-# 训练
+# 训练（默认初始化：parameters/sft_PMT_en_1024.pth）
 DATA=dataset/RAG_MedQA_US_train_10178.json bash scripts/run_cascade_train.sh
-# → out/run_pmt/cascade_PMT_en_1024_best.pth
+```
 
-# 评测
+**训练产物默认保存位置**（可用环境变量 `OUT` / `INIT` 覆盖）：
+
+| 路径 | 说明 |
+|------|------|
+| `out/run_pmt/` | 训练输出目录（默认） |
+| `out/run_pmt/cascade_PMT_en_1024_best.pth` | 验证集最优检查点（评测默认加载） |
+| `out/run_pmt/cascade_PMT_en_1024_epochN.pth` | 各 epoch 快照（若脚本写出） |
+
+```bash
+# 自定义输出目录 / 初始化权重
+INIT=parameters/sft_PMT_en_1024.pth OUT=out/run_pmt_exp1 \
+  DATA=dataset/RAG_MedQA_US_train_10178.json bash scripts/run_cascade_train.sh
+```
+
+### 评测（默认加载训练产物）
+
+```bash
+# 默认：加载 out/run_pmt/cascade_PMT_en_1024_best.pth，评测 USMLE + MedMCQA
 DATASETS=USMLE,MEDMCQA bash scripts/run_cascade_infer.sh
 ```
 
-结果目录：`results/result_summary` 或自动递增的 `result_summaryN/`。说明见 [results/README.md](results/README.md) 与 [results/result_summary/README.md](results/result_summary/README.md)。
+结果写入 `results/result_summary`；若该目录已存在则自动使用 `result_summary1`、`result_summary2`…（不覆盖）。说明见 [results/README.md](results/README.md) 与 [results/result_summary/README.md](results/result_summary/README.md)。
 
-## 可选：通用指令对齐（得到 `sft_PMT_en_1024.pth`）
+### 指定某个 PMT 检查点做推理
 
-本节**不是**主流程必需。仅在需要从 `PMT_Base` / `pretrain_*.pth` **自行**得到训练初始化权重时使用；若已下载 `parameters/sft_PMT_en_1024.pth`，请跳过。
-
-**加载**：`parameters/pretrain_PMT_en_1024_final.pth`（对应 `PMT_Base_300M`）。若只有 HF 目录，先转换：
+一体流程仍会加载 `parameters/ckpt_0/`；通过 `CHECKPOINT`（或 `--checkpoint`）指定要评测的 PMT 权重：
 
 ```bash
-python tools/convert_model.py --mode transformers2torch \
-  --transformers_path parameters/PMT_Base_300M \
-  --torch_path parameters/pretrain_PMT_en_1024_final.pth \
-  --model_type PMT --language en \
-  --hidden_size 1024 --num_hidden_layers 24 \
-  --num_attention_heads 8 --num_key_value_heads 2 --max_seq_len 1024
+# 使用本仓库训练得到的 best 权重
+CHECKPOINT=out/run_pmt/cascade_PMT_en_1024_best.pth \
+  DATASETS=USMLE bash scripts/run_cascade_infer.sh
 
-cd trainer
-python train_full_sft.py --epochs 2 \
-  --data_path ../dataset/openhermes2_5.jsonl \
-  --out_dir ../parameters
+# 使用发布的初始化权重（未做本仓库检索增强训练时也可评测）
+CHECKPOINT=parameters/sft_PMT_en_1024.pth \
+  DATASETS=USMLE bash scripts/run_cascade_infer.sh
+
+# 仅评测单个 JSON，并指定结果目录
+CHECKPOINT=out/run_pmt_exp1/cascade_PMT_en_1024_best.pth \
+  DATA=dataset/RAG_MedQA_US_test_1273.json \
+  DATASETS=USMLE \
+  RESULT_DIR=results/result_summary_manual \
+  bash scripts/run_cascade_infer.sh
+```
+
+等价 Python 入口：
+
+```bash
+python inference_cascade_pmt.py \
+  --datasets USMLE \
+  --checkpoint out/run_pmt/cascade_PMT_en_1024_best.pth
 ```
 
 ## 许可
