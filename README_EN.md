@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 
-中文：[README_CN.md](README_CN.md) · English home: [README.md](README.md)
+中文：[README_CN.md](README_CN.md)
 
 GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 
