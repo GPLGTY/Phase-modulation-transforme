@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""
-temperature（PMTEmbed）× ntk_alpha（NTK RoPE）推理期消融。
+"""temperature × ntk_alpha 推理消融（对外数据口径与 v5 一致）。
 
-固定权重，在 dev intent JSON 上批量推理，输出与 inference_intent_results_s1024.csv 同列的逐条 CSV，
-并汇总 accuracy 到 results/ablation/summary.csv。
+输入：检索增强样本 JSON（包 04 等），字段含 question_with_options、answer_idx，
+可含 retrieve_info。运行时由一体流程在线生成上下文并完成选项预测；
+不读写中间样本格式，也不落盘中间文本。
+
+输出：写入 results/result_summary 或 result_summaryN 下的
+  {DATASET}__TRAINING-{T|F}__Inference-{T|F}/
+结构对齐现有 result_summary（eval_temp*_ntk*.csv + summary.csv + manifest.json）。
 
 用法（项目根目录）：
 
-  python scripts/run_ablation_temp_ntk.py
-  python scripts/run_ablation_temp_ntk.py --limit 32   # 冒烟
-  python scripts/run_ablation_temp_ntk.py --batch_size 4
-  python scripts/run_ablation_temp_ntk.py --temperatures 0.9,1.1,1.3 --ntk_alphas 0.5,0.8,1.0
+  python scripts/run_ablation_temp_ntk.py --limit 8
+  DATASET_NAME=USMLE python scripts/run_ablation_temp_ntk.py
 """
 
 from __future__ import annotations
@@ -18,10 +20,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
 import sys
 import time
-from contextlib import nullcontext
 from pathlib import Path
 
 import torch
@@ -31,25 +31,24 @@ from transformers import LlamaTokenizerFast
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from inference import (
-    decode_generation_texts,
-    format_inst_prompt_sft,
-    merge_system_and_user_body,
-    parse_messages,
-    postprocess_model_raw_output,
-    resolve_extracted_choice,
-)
+from inference import format_inst_prompt_sft, merge_system_and_user_body
 from model.PMTConfig import PMTConfig
+from model.pmt_protocol import (
+    PROTOCOL_PMT_RAG,
+    allocate_result_summary_dir,
+    prepare_sample_for_protocol,
+    protocol_slot,
+    resolve_pmt_infer_ckpt,
+)
 from model.pmtmodel import PhaseModulationTransformer
+from model.sidecar_runtime import SidecarPool, gold_letter, load_map
 
 CSV_FIELDS = [
     "id",
     "meta_info",
     "question_with_options",
-    "assistant_content",
     "answer_with_idx",
     "answer_idx",
-    "model_input_prompt",
     "model_raw_output",
     "extracted_choice",
     "matches_answer_idx",
@@ -57,7 +56,7 @@ CSV_FIELDS = [
 ]
 
 DEFAULT_TEMPERATURES = [0.7, 0.9, 1.1, 1.3, 1.5]
-DEFAULT_NTK_ALPHAS =  [0.4, 0.6, 0.8, 1.0, 1.2]
+DEFAULT_NTK_ALPHAS = [0.4, 0.6, 0.8, 1.0, 1.2]
 
 
 def _parse_float_list(s: str) -> list[float]:
@@ -65,8 +64,19 @@ def _parse_float_list(s: str) -> list[float]:
 
 
 def _param_tag(name: str, value: float) -> str:
-    """文件名友好：temp1p10 / ntk0p80"""
     return f"{name}{str(value).replace('.', 'p')}"
+
+
+def _bool_tag(v: bool) -> str:
+    return "TRUE" if v else "FALSE"
+
+
+def extract_letter(text: str) -> str:
+    t = (text or "").strip()
+    if not t:
+        return ""
+    ch = t[0].upper()
+    return ch if ch in "ABCDE" else ""
 
 
 def apply_ablation_settings(
@@ -84,547 +94,307 @@ def apply_ablation_settings(
         layer.attn.dynamic_ntk.max_train_len = int(ntk_max_train_len)
 
 
-def load_model_and_tokenizer(args, device: torch.device):
-    lm_config = PMTConfig(
+def load_pmt(args, device: torch.device):
+    tok = LlamaTokenizerFast.from_pretrained(str(ROOT / "model" / "tokenizer_en"))
+    tok.pad_token = tok.eos_token
+    cfg = PMTConfig(
         dim=args.hidden_size,
         n_layers=args.num_hidden_layers,
         n_heads=args.num_attention_heads,
+        n_kv_heads=args.num_key_value_heads,
         max_seq_len=args.max_seq_len,
         flash_attn=True,
-        vocab_size=32000,
-        n_kv_heads=args.num_key_value_heads,
-        ntk_alpha=0.8,
     )
-    tok_dir = ROOT / "model" / "tokenizer_en"
-    tokenizer = LlamaTokenizerFast.from_pretrained(str(tok_dir))
-    # Llama 默认常无 pad_token；若 pad_token_id 落在 <unk>=0，批 padding 会写满 0，
-    # CSV 里 decode(input_ids[:sum(mask)]) 又会误取「左侧填充区」→ 一大片 <unk>。
-    tokenizer.pad_token = tokenizer.eos_token
-
-    tokenizer.truncation_side = "left"
-    tokenizer.padding_side = "left"
-
-    model = PhaseModulationTransformer(lm_config)
-    state = torch.load(args.checkpoint, map_location="cpu")
+    model = PhaseModulationTransformer(cfg)
+    ckpt = resolve_pmt_infer_ckpt(
+        PROTOCOL_PMT_RAG,
+        explicit=args.checkpoint or None,
+        out_dir=args.out_dir or None,
+        hidden_size=args.hidden_size,
+    )
+    state = torch.load(str(ckpt), map_location="cpu")
     model.load_state_dict(state, strict=False)
-    model = model.to(device)
+    model.to(device)
     model.eval()
-
-    if device.type == "cpu":
-        for m in model.modules():
-            if m.__class__.__name__ == "PMTAttention":
-                m.flash = False
-
-    if args.dtype == "bfloat16" and device.type == "cuda":
-        model = model.to(dtype=torch.bfloat16)
-    elif args.dtype == "float16" and device.type == "cuda":
-        model = model.to(dtype=torch.float16)
-    else:
-        model = model.to(dtype=torch.float32)
-
-    return model, tokenizer, lm_config
+    dtype = {"bfloat16": torch.bfloat16, "float16": torch.float16, "float32": torch.float32}[
+        args.dtype
+    ]
+    if args.dtype != "float32":
+        model = model.to(dtype=dtype)
+    return model, tok, ckpt
 
 
-def _row_skeleton(item: dict) -> dict:
-    return {
-        "id": item.get("id", ""),
-        "meta_info": item.get("meta_info", ""),
-        "question_with_options": item.get("question_with_options", ""),
-        "assistant_content": "",
-        "answer_with_idx": item.get("answer_with_idx", ""),
-        "answer_idx": (item.get("answer_idx") or "").strip().upper(),
-        "model_input_prompt": "",
-        "model_raw_output": "",
-        "extracted_choice": "",
-        "matches_answer_idx": False,
-        "error": "",
-    }
-
-
-def _prepare_record(item: dict) -> dict:
-    row = _row_skeleton(item)
-    system_txt, user_txt, assistant_txt = parse_messages(item.get("messages", []))
-    row["assistant_content"] = (assistant_txt or "").strip()
-    if not user_txt:
-        row["error"] = "messages 中缺少 role=user"
-        return {"row": row, "prompt": None}
-    merged = merge_system_and_user_body(system_txt, user_txt)
-    return {"row": row, "prompt": format_inst_prompt_sft(merged)}
-
-
-def _build_gen_kw(args, tokenizer) -> dict:
-    gen_kw = dict(
-        max_new_tokens=args.max_new_tokens,
-        do_sample=False,
-        num_beams=1,
-        pad_token_id=tokenizer.pad_token_id,
-        eos_token_id=tokenizer.eos_token_id,
-        use_cache=True,
+def build_sidecar(args, route_cfg: dict) -> SidecarPool:
+    slot = protocol_slot(PROTOCOL_PMT_RAG, route_cfg)
+    return SidecarPool(
+        map_path=args.sidecar_map,
+        backend=args.sidecar_backend,
+        dtype=args.sidecar_dtype,
+        max_model_len=args.sidecar_max_model_len,
+        tp_by_slot={slot: args.sidecar_tp},
+        mem_util_by_slot={slot: args.sidecar_mem},
+        load_slots=[slot],
     )
-    if args.min_new_tokens and args.min_new_tokens > 0:
-        gen_kw["min_new_tokens"] = min(args.min_new_tokens, args.max_new_tokens)
-    return gen_kw
-
-
-def _decode_one_output(
-    tokenizer,
-    input_ids_row,
-    output_ids_row,
-    attention_mask_row,
-    padded_input_width: int,
-    assistant_content: str,
-    args,
-) -> tuple[str, str, str, bool]:
-    """从 generate 结果中拆出 prompt 与生成段。
-
-    ``padded_input_width`` 为 **左填充后** 输入序列在 ``output_ids_row`` 中所占长度
-    （与 ``tokenizer(..., padding=True)`` 的 ``input_ids.shape[1]`` 一致），不要用
-    ``attention_mask.sum()`` 代替，否则会切错新生成 token。
-    CSV 里写回 ``model_input_prompt`` 时仅用 ``attention_mask`` 为 1 的位置 decode，避免解码 padding。
-    """
-    if args.no_csv_model_input:
-        model_input_prompt = ""
-    else:
-        valid = input_ids_row[attention_mask_row.bool()]
-        model_input_prompt = tokenizer.decode(valid, skip_special_tokens=False)
-
-    gen_ids = output_ids_row[padded_input_width:]
-    raw_extract, raw_csv = decode_generation_texts(tokenizer, gen_ids)
-    canonical = raw_csv if not (raw_extract or "").strip() else raw_extract
-    out_text = (
-        postprocess_model_raw_output(canonical)
-        if not args.no_compact_model_output
-        else canonical
-    )
-    ex = resolve_extracted_choice(
-        assistant_content, out_text, args.extract_choice_from
-    )
-    return model_input_prompt, out_text, ex, ex
-
-
-def _infer_single(
-    model,
-    tokenizer,
-    record: dict,
-    args,
-    device: torch.device,
-    max_input_len: int,
-    autocast_ctx,
-    gen_kw: dict,
-) -> dict:
-    row = dict(record["row"])
-    prompt = record["prompt"]
-    try:
-        enc = tokenizer(
-            prompt,
-            return_tensors="pt",
-            truncation=True,
-            max_length=max_input_len,
-            add_special_tokens=False,
-        )
-        enc = {k: v.to(device) for k, v in enc.items()}
-        padded_w = int(enc["input_ids"].shape[1])
-        with torch.no_grad():
-            with autocast_ctx():
-                out = model.generate(**enc, **gen_kw)
-        mip, out_text, ex, _ = _decode_one_output(
-            tokenizer,
-            enc["input_ids"][0].cpu(),
-            out[0].cpu(),
-            enc["attention_mask"][0].cpu(),
-            padded_w,
-            row["assistant_content"],
-            args,
-        )
-        row["model_input_prompt"] = mip
-        row["model_raw_output"] = out_text
-        row["extracted_choice"] = ex
-        row["matches_answer_idx"] = bool(ex) and (ex == row["answer_idx"])
-    except Exception as e:
-        row["error"] = str(e)
-        row["matches_answer_idx"] = False
-    return row
-
-
-def _infer_batch(
-    model,
-    tokenizer,
-    batch_records: list,
-    args,
-    device: torch.device,
-    max_input_len: int,
-    autocast_ctx,
-    gen_kw: dict,
-) -> list[dict]:
-    prompts = [r["prompt"] for r in batch_records]
-    enc = tokenizer(
-        prompts,
-        return_tensors="pt",
-        padding=True,
-        truncation=True,
-        max_length=max_input_len,
-        add_special_tokens=False,
-    )
-    enc = {k: v.to(device) for k, v in enc.items()}
-    padded_w = int(enc["input_ids"].shape[1])
-
-    with torch.no_grad():
-        with autocast_ctx():
-            out = model.generate(**enc, **gen_kw)
-
-    rows = []
-    for i, rec in enumerate(batch_records):
-        row = dict(rec["row"])
-        mip, out_text, ex, _ = _decode_one_output(
-            tokenizer,
-            enc["input_ids"][i].cpu(),
-            out[i].cpu(),
-            enc["attention_mask"][i].cpu(),
-            padded_w,
-            row["assistant_content"],
-            args,
-        )
-        row["model_input_prompt"] = mip
-        row["model_raw_output"] = out_text
-        row["extracted_choice"] = ex
-        row["matches_answer_idx"] = bool(ex) and (ex == row["answer_idx"])
-        rows.append(row)
-    return rows
 
 
 def run_one_combo(
-    model: PhaseModulationTransformer,
-    tokenizer: LlamaTokenizerFast,
-    data: list,
+    *,
+    samples: list,
+    model,
+    tok,
+    sidecar: SidecarPool,
+    route_cfg: dict,
+    force_slot: str,
     args,
     device: torch.device,
     temperature: float,
     ntk_alpha: float,
     output_csv: Path,
 ) -> dict:
-    apply_ablation_settings(
-        model, temperature, ntk_alpha, args.ntk_max_train_len
-    )
-
-    max_input_len = max(64, args.max_seq_len - args.max_new_tokens - 8)
-    batch_size = max(1, int(args.batch_size))
-    gen_kw = _build_gen_kw(args, tokenizer)
-
-    if device.type != "cuda" or args.dtype == "float32":
-        autocast_ctx = nullcontext
-    elif args.dtype == "bfloat16":
-
-        def autocast_ctx():
-            return torch.cuda.amp.autocast(dtype=torch.bfloat16)
-
-    else:
-
-        def autocast_ctx():
-            return torch.cuda.amp.autocast(dtype=torch.float16)
-
-    records = [_prepare_record(item) for item in data]
-    n_ok = 0
-    n_match = 0
-    n_err = 0
-    t0 = time.time()
-
+    apply_ablation_settings(model, temperature, ntk_alpha, args.ntk_max_train_len)
     output_csv.parent.mkdir(parents=True, exist_ok=True)
+
+    n_ok = n_match = n_err = n_skip = 0
+    t0 = time.time()
     with open(output_csv, "w", encoding="utf-8-sig", newline="") as fout:
-        writer = csv.DictWriter(
-            fout,
-            fieldnames=CSV_FIELDS,
-            extrasaction="ignore",
-            quoting=csv.QUOTE_MINIMAL,
-        )
+        writer = csv.DictWriter(fout, fieldnames=CSV_FIELDS, extrasaction="ignore")
         writer.writeheader()
-
-        n_batches = (len(records) + batch_size - 1) // batch_size
-        pbar = tqdm(range(0, len(records), batch_size), total=n_batches, leave=False)
-
-        for start in pbar:
-            pbar.set_description(
-                f"T={temperature} ntk={ntk_alpha} bs={batch_size}"
-            )
-            chunk = records[start : start + batch_size]
-            invalid = [r for r in chunk if r["prompt"] is None]
-            valid = [r for r in chunk if r["prompt"] is not None]
-
-            for r in invalid:
-                writer.writerow(r["row"])
-                n_err += 1
-
-            if not valid:
-                continue
-
-            try:
-                if len(valid) == 1:
-                    rows = [
-                        _infer_single(
-                            model,
-                            tokenizer,
-                            valid[0],
-                            args,
-                            device,
-                            max_input_len,
-                            autocast_ctx,
-                            gen_kw,
-                        )
-                    ]
-                else:
-                    rows = _infer_batch(
-                        model,
-                        tokenizer,
-                        valid,
-                        args,
-                        device,
-                        max_input_len,
-                        autocast_ctx,
-                        gen_kw,
-                    )
-            except RuntimeError as e:
-                if "out of memory" not in str(e).lower():
-                    raise
-                if device.type == "cuda":
-                    torch.cuda.empty_cache()
-                rows = []
-                for rec in valid:
-                    try:
-                        rows.append(
-                            _infer_single(
-                                model,
-                                tokenizer,
-                                rec,
-                                args,
-                                device,
-                                max_input_len,
-                                autocast_ctx,
-                                gen_kw,
-                            )
-                        )
-                    except Exception as e2:
-                        row = dict(rec["row"])
-                        row["error"] = str(e2)
-                        rows.append(row)
-                    if device.type == "cuda":
-                        torch.cuda.empty_cache()
-
-            for row in rows:
+        for sample in tqdm(samples, desc=f"T={temperature} ntk={ntk_alpha}", leave=False):
+            row = {
+                "id": sample.get("id", ""),
+                "meta_info": sample.get("meta_info", ""),
+                "question_with_options": sample.get("question_with_options", ""),
+                "answer_with_idx": sample.get("answer_with_idx", ""),
+                "answer_idx": gold_letter(sample),
+                "model_raw_output": "",
+                "extracted_choice": "",
+                "matches_answer_idx": False,
+                "error": "",
+            }
+            view = prepare_sample_for_protocol(sample, PROTOCOL_PMT_RAG, route_cfg)
+            if view is None:
+                n_skip += 1
+                row["error"] = "no_retrieval"
                 writer.writerow(row)
-                if row.get("error"):
-                    n_err += 1
-                else:
+                continue
+            try:
+                _slot, ctx, system = sidecar.generate(
+                    view,
+                    temperature=args.sidecar_temperature,
+                    max_tokens=args.sidecar_max_tokens,
+                    force_slot=force_slot,
+                )
+                merged = merge_system_and_user_body(system, ctx)
+                del ctx
+                prompt = format_inst_prompt_sft(merged)
+                ids = tok.encode(prompt, add_special_tokens=False)
+                budget = args.max_seq_len - args.max_new_tokens
+                if len(ids) > budget:
+                    ids = ids[-budget:]
+                x = torch.tensor([ids], dtype=torch.long, device=device)
+                with torch.inference_mode():
+                    gen = model.generate(
+                        x,
+                        max_new_tokens=args.max_new_tokens,
+                        do_sample=False,
+                        pad_token_id=tok.pad_token_id,
+                        eos_token_id=tok.eos_token_id,
+                    )
+                raw = tok.decode(gen[0, x.shape[-1] :], skip_special_tokens=True)
+                pred = extract_letter(raw)
+                gold = row["answer_idx"]
+                row["model_raw_output"] = raw
+                row["extracted_choice"] = pred
+                row["matches_answer_idx"] = bool(pred and gold and pred == gold)
+                if gold in "ABCDE":
                     n_ok += 1
-                    if row.get("matches_answer_idx"):
-                        n_match += 1
+                    n_match += int(row["matches_answer_idx"])
+            except Exception as e:
+                row["error"] = str(e)
+                n_err += 1
+            writer.writerow(row)
 
     elapsed = time.time() - t0
-    n_total = len(data)
     acc = (n_match / n_ok) if n_ok else 0.0
     return {
         "temperature": temperature,
         "ntk_alpha": ntk_alpha,
         "ntk_max_train_len": args.ntk_max_train_len,
-        "batch_size": batch_size,
-        "n_total": n_total,
+        "n_total": len(samples),
         "n_scored": n_ok,
         "n_match": n_match,
         "n_error": n_err,
+        "n_skip": n_skip,
         "accuracy": acc,
         "elapsed_sec": round(elapsed, 1),
         "output_csv": str(output_csv),
     }
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="temperature × ntk_alpha 推理消融（dev intent）"
-    )
-    parser.add_argument(
-        "--checkpoint",
-        type=str,
-        default=str(ROOT / "out" / "run_intent_seq8192_20260521" / "sft_intent_PMT_en_1024.pth"),
-    )
-    parser.add_argument(
+def main() -> None:
+    p = argparse.ArgumentParser(description="RAG JSON 上的 temperature × ntk_alpha 消融")
+    p.add_argument("--checkpoint", type=str, default="", help="PMT 权重；默认 out/run_pmt/*_best.pth")
+    p.add_argument("--out_dir", type=str, default="", help="PMT 目录覆盖")
+    p.add_argument(
         "--data_path",
         type=str,
-        default=str(ROOT / "dataset" / "RAG_MedQA_US_dev_1272_intent.json"),
+        default=str(ROOT / "dataset" / "RAG_MedQA_US_test_1273.json"),
+        help="检索增强样本 JSON（包 04 口径，非中间产物）",
     )
-    parser.add_argument(
-        "--results_dir",
+    p.add_argument("--dataset_name", type=str, default="USMLE", help="子目录前缀：USMLE 或 MEDMCQA")
+    p.add_argument(
+        "--train_ntk",
+        choices=("TRUE", "FALSE"),
+        default="TRUE",
+        help="目录标签 TRAINING-*（对应所用 PMT 训练设定）",
+    )
+    p.add_argument(
+        "--infer_ntk",
+        choices=("TRUE", "FALSE"),
+        default="TRUE",
+        help="目录标签 Inference-*",
+    )
+    p.add_argument(
+        "--result_dir",
         type=str,
-        default=str(ROOT / "results" / "ablation"),
+        default="",
+        help="显式结果根；默认 allocate result_summary / result_summaryN",
     )
-    parser.add_argument(
-        "--temperatures",
-        type=str,
-        default=",".join(str(t) for t in DEFAULT_TEMPERATURES),
+    p.add_argument("--temperatures", type=str, default=",".join(map(str, DEFAULT_TEMPERATURES)))
+    p.add_argument("--ntk_alphas", type=str, default=",".join(map(str, DEFAULT_NTK_ALPHAS)))
+    p.add_argument("--ntk_max_train_len", type=int, default=4096)
+    p.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
+    p.add_argument("--dtype", choices=("bfloat16", "float16", "float32"), default="bfloat16")
+    p.add_argument("--max_seq_len", type=int, default=4096)
+    p.add_argument("--max_new_tokens", type=int, default=4)
+    p.add_argument("--hidden_size", type=int, default=1024)
+    p.add_argument("--num_hidden_layers", type=int, default=24)
+    p.add_argument("--num_attention_heads", type=int, default=16)
+    p.add_argument("--num_key_value_heads", type=int, default=4)
+    p.add_argument("--limit", type=int, default=0)
+    p.add_argument("--skip_existing", action="store_true")
+    p.add_argument("--sidecar_map", type=str, default=str(ROOT / "model" / "sidecar_map.json"))
+    p.add_argument("--sidecar_backend", choices=("transformers", "vllm"), default="transformers")
+    p.add_argument("--sidecar_dtype", default="bfloat16")
+    p.add_argument("--sidecar_max_tokens", type=int, default=4096)
+    p.add_argument("--sidecar_temperature", type=float, default=0.7)
+    p.add_argument("--sidecar_max_model_len", type=int, default=8192)
+    p.add_argument("--sidecar_tp", type=int, default=1)
+    p.add_argument("--sidecar_mem", type=float, default=0.85)
+    args = p.parse_args()
+
+    data_path = Path(args.data_path)
+    if not data_path.is_file():
+        raise SystemExit(f"data not found: {data_path} (expect pack-04 RAG JSON)")
+    if "messages" in data_path.name.lower() or data_path.name.lower().endswith("_msgs.json"):
+        raise SystemExit(
+            f"refusing intermediate filename {data_path.name}; "
+            "use retrieval JSON e.g. dataset/RAG_MedQA_US_test_1273.json"
+        )
+
+    samples = json.loads(data_path.read_text(encoding="utf-8"))
+    if not isinstance(samples, list):
+        raise SystemExit("data_path must be a JSON list")
+    if args.limit > 0:
+        samples = samples[: args.limit]
+
+    root = Path(args.result_dir) if args.result_dir else allocate_result_summary_dir()
+    root.mkdir(parents=True, exist_ok=True)
+    table_dir = (
+        root
+        / f"{args.dataset_name.upper()}__TRAINING-{args.train_ntk}__Inference-{args.infer_ntk}"
     )
-    parser.add_argument(
-        "--ntk_alphas",
-        type=str,
-        default=",".join(str(a) for a in DEFAULT_NTK_ALPHAS),
-    )
-    parser.add_argument(
-        "--ntk_max_train_len",
-        type=int,
-        default=1024,
-        help="NTK 触发阈值；默认 1024，使 8192 推理下 ntk_alpha 生效",
-    )
-    parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
-    parser.add_argument("--dtype", choices=("bfloat16", "float16", "float32"), default="float32")
-    parser.add_argument("--max_seq_len", type=int, default=4096)
-    parser.add_argument("--max_new_tokens", type=int, default=1)
-    parser.add_argument("--min_new_tokens", type=int, default=1)
-    parser.add_argument("--hidden_size", type=int, default=1024)
-    parser.add_argument("--num_hidden_layers", type=int, default=24)
-    parser.add_argument("--num_attention_heads", type=int, default=16)
-    parser.add_argument("--num_key_value_heads", type=int, default=4)
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=1,
-        help="推理 micro-batch；OOM 时自动对该 batch 逐条重试",
-    )
-    parser.add_argument("--limit", type=int, default=0)
-    parser.add_argument("--no-csv-model-input", action="store_true")
-    parser.add_argument("--no-compact-model-output", action="store_true")
-    parser.add_argument(
-        "--extract_choice_from",
-        choices=("model", "assistant", "both"),
-        default="model",
-    )
-    parser.add_argument(
-        "--skip_existing",
-        action="store_true",
-        help="若对应 CSV 已存在则跳过该组（便于断点续跑）",
-    )
-    args = parser.parse_args()
+    table_dir.mkdir(parents=True, exist_ok=True)
 
     temperatures = _parse_float_list(args.temperatures)
     ntk_alphas = _parse_float_list(args.ntk_alphas)
-    if not temperatures or not ntk_alphas:
-        print("错误: temperatures / ntk_alphas 不能为空", file=sys.stderr)
-        sys.exit(1)
-
-    ckpt = os.path.abspath(args.checkpoint)
-    if not os.path.isfile(ckpt):
-        print(f"错误: 找不到检查点: {ckpt}", file=sys.stderr)
-        sys.exit(1)
-
-    data_path = os.path.abspath(args.data_path)
-    with open(data_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    if not isinstance(data, list):
-        print("错误: JSON 根应为数组", file=sys.stderr)
-        sys.exit(1)
-    if args.limit and args.limit > 0:
-        data = data[: args.limit]
-
-    results_dir = Path(args.results_dir)
-    results_dir.mkdir(parents=True, exist_ok=True)
     device = torch.device(args.device)
+    route_cfg = load_map(args.sidecar_map)
+    force_slot = protocol_slot(PROTOCOL_PMT_RAG, route_cfg)
+    sidecar = build_sidecar(args, route_cfg)
+    model, tok, ckpt_used = load_pmt(args, device)
 
-    print(f"检查点: {ckpt}", flush=True)
-    print(f"数据: {data_path} | n={len(data)}", flush=True)
-    print(f"网格: |T|={len(temperatures)} |ntk|={len(ntk_alphas)}", flush=True)
-    print(f"NTK max_train_len={args.ntk_max_train_len} | max_seq_len={args.max_seq_len}", flush=True)
-    print(f"batch_size={max(1, args.batch_size)}", flush=True)
+    print(f"result_root={root}", flush=True)
+    print(f"table_dir={table_dir}", flush=True)
+    print(f"data={data_path} n={len(samples)}", flush=True)
+    print(f"pmt={ckpt_used}", flush=True)
 
-    model, tokenizer, lm_config = load_model_and_tokenizer(args, device)
-
-    manifest = {
-        "checkpoint": ckpt,
-        "data_path": data_path,
-        "n_samples": len(data),
-        "temperatures": temperatures,
-        "ntk_alphas": ntk_alphas,
-        "ntk_max_train_len": args.ntk_max_train_len,
-        "max_seq_len": args.max_seq_len,
-        "batch_size": max(1, args.batch_size),
-        "lm_config": {
-            "dim": lm_config.dim,
-            "n_layers": lm_config.n_layers,
-            "n_heads": lm_config.n_heads,
-            "n_kv_heads": lm_config.n_kv_heads,
-        },
-        "runs": [],
-    }
-
-    summary_path = results_dir / "summary.csv"
+    summary_rows = []
     summary_fields = [
         "run_id",
         "temperature",
         "ntk_alpha",
         "ntk_max_train_len",
-        "batch_size",
         "n_total",
         "n_scored",
         "n_match",
         "n_error",
+        "n_skip",
         "accuracy",
         "elapsed_sec",
         "output_csv",
     ]
-
     run_id = 0
-    all_rows = []
-
     for temperature in temperatures:
         for ntk_alpha in ntk_alphas:
             run_id += 1
             fname = (
-                f"intent_dev_{_param_tag('temp', temperature)}_"
-                f"{_param_tag('ntk', ntk_alpha)}.csv"
+                f"eval_{_param_tag('temp', temperature)}_{_param_tag('ntk', ntk_alpha)}.csv"
             )
-            out_csv = results_dir / fname
-
+            out_csv = table_dir / fname
             if args.skip_existing and out_csv.is_file():
-                print(f"[{run_id}] 跳过已存在: {out_csv}", flush=True)
+                print(f"[{run_id}] skip {out_csv.name}", flush=True)
                 continue
-
             print(
                 f"[{run_id}/{len(temperatures)*len(ntk_alphas)}] "
-                f"temperature={temperature} ntk_alpha={ntk_alpha} -> {out_csv.name}",
+                f"T={temperature} ntk={ntk_alpha} -> {fname}",
                 flush=True,
             )
             row = run_one_combo(
-                model,
-                tokenizer,
-                data,
-                args,
-                device,
-                temperature,
-                ntk_alpha,
-                out_csv,
+                samples=samples,
+                model=model,
+                tok=tok,
+                sidecar=sidecar,
+                route_cfg=route_cfg,
+                force_slot=force_slot,
+                args=args,
+                device=device,
+                temperature=temperature,
+                ntk_alpha=ntk_alpha,
+                output_csv=out_csv,
             )
             row["run_id"] = run_id
-            all_rows.append(row)
-            manifest["runs"].append(row)
+            summary_rows.append(row)
             print(
-                f"    accuracy={row['accuracy']:.4f} "
-                f"({row['n_match']}/{row['n_scored']}) "
-                f"time={row['elapsed_sec']}s",
+                f"    acc={row['accuracy']:.4f} ({row['n_match']}/{row['n_scored']})",
                 flush=True,
             )
-
-            with open(summary_path, "w", encoding="utf-8-sig", newline="") as sf:
+            with open(table_dir / "summary.csv", "w", encoding="utf-8-sig", newline="") as sf:
                 w = csv.DictWriter(sf, fieldnames=summary_fields, extrasaction="ignore")
                 w.writeheader()
-                w.writerows(all_rows)
+                w.writerows(summary_rows)
 
-    manifest_path = results_dir / "manifest.json"
-    with open(manifest_path, "w", encoding="utf-8") as mf:
-        json.dump(manifest, mf, ensure_ascii=False, indent=2)
-
-    print(f"\n汇总: {summary_path}", flush=True)
-    print(f"配置: {manifest_path}", flush=True)
-    if all_rows:
-        best = max(all_rows, key=lambda r: r["accuracy"])
-        print(
-            f"最高 accuracy={best['accuracy']:.4f} @ "
-            f"T={best['temperature']} ntk={best['ntk_alpha']}",
-            flush=True,
-        )
+    manifest = {
+        "dataset_name": args.dataset_name.upper(),
+        "train_ntk": args.train_ntk,
+        "infer_ntk": args.infer_ntk,
+        "data_path": str(data_path),
+        "pmt_checkpoint": str(ckpt_used),
+        "n_samples": len(samples),
+        "temperatures": temperatures,
+        "ntk_alphas": ntk_alphas,
+        "runs": summary_rows,
+    }
+    (table_dir / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    (table_dir / "README_对应说明.txt").write_text(
+        f"对应 {args.dataset_name.upper()} | TRAINING {args.train_ntk} | Inference {args.infer_ntk}\n"
+        f"数据：检索增强 JSON（包 04 口径）\n"
+        f"PMT：{ckpt_used}\n",
+        encoding="utf-8",
+    )
+    print(f"done -> {table_dir}", flush=True)
 
 
 if __name__ == "__main__":

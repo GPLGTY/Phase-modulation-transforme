@@ -4,8 +4,13 @@ __pycache__/
 .DS_Store
 wandb/
 *.log
-results/medqa_intent_test1273_eval/
-results/medqa_intent_test1273_reeval_*/
+# Deprecated protocol_benchmark: keep README only
+results/protocol_benchmark/*/
+!results/protocol_benchmark/README.md
+results/protocol_eval.csv
+results/medqa_test1273_eval/
+results/medqa_test1273_reeval_*/
+# Keep results/result_summary and result_summaryN tracked (CSV summaries)
 .modelscope_packs/
 .modelscope_publish/
 .modelscope_publish_assets/
@@ -19,19 +24,17 @@ parameters/MiniMind_Base_300M/
 parameters/MiniMind_Struct_300M/
 parameters/sft_PMT_en_1024.pth
 parameters/sft_QF_en_1024.pth
+parameters/ckpt_0/
 parameters/ckpt_a/
 parameters/ckpt_b/
 parameters/ckpt_c/
-out/run_sft_intent/*.pth
+out/run_pmt/
 out/run_pmt_norag/
 out/run_pmt_rag/
 dataset/SlimPajama-1B_full.jsonl
 dataset/openhermes2_5.jsonl
 dataset/pretrain_hq_zh.jsonl
 dataset/sft_mini_512_zh.jsonl
-dataset/RAG_MedQA_US_train_10178_intent.json
-dataset/RAG_MedQA_US_dev_1272_intent.json
-dataset/RAG_MedQA_US_test_1273_intent.json
 dataset/RAG_MedQA_US_train_10178.json
 dataset/RAG_MedQA_US_dev_1272.json
 dataset/RAG_MedQA_US_test_1273.json

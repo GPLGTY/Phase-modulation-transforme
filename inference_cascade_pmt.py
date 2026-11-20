@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
-"""Protocol evaluation: option-letter accuracy only (no upstream intermediates).
+"""RAG evaluation for the Phase-modulation-transformer stack (ckpt_0 + PMT).
 
-Protocols:
-  no_pmt     — standalone upstream (no PhaseModulationTransformer)
-  pmt_norag  — PhaseModulationTransformer + non-retrieval cascade branch
-  pmt_rag    — PhaseModulationTransformer + retrieval-augmented cascade branch
-  all       — run the three protocols and report each accuracy
-
-PhaseModulationTransformer checkpoints are resolved automatically:
-  train writes out/run_cascade_{norag|rag}/; infer loads *_best.pth from there.
+Does not persist cascade intermediates (no assistant_content / model_input_prompt).
+Default multi-dataset runs write under results/result_summary or result_summaryN.
 """
 
 from __future__ import annotations
@@ -26,18 +20,28 @@ from inference import format_inst_prompt_sft, merge_system_and_user_body
 from model.PMTConfig import PMTConfig
 from model.pmtmodel import PhaseModulationTransformer
 from model.pmt_protocol import (
-    ALL_PROTOCOLS,
-    PROTOCOL_NO_PMT,
-    PROTOCOL_PMT_NORAG,
     PROTOCOL_PMT_RAG,
+    allocate_result_summary_dir,
     prepare_sample_for_protocol,
-    protocol_needs_pmt,
     protocol_slot,
     resolve_pmt_infer_ckpt,
 )
 from model.sidecar_runtime import SidecarPool, gold_letter, load_map
 
 ROOT = Path(__file__).resolve().parent
+
+# Default eval sets: USMLE (MedQA) + MedMCQA (first existing path wins)
+DEFAULT_DATASETS = {
+    "USMLE": [
+        ROOT / "dataset" / "RAG_MedQA_US_test_1273.json",
+        ROOT / "dataset" / "RAG_MedQA_US_dev_1272.json",
+    ],
+    "MEDMCQA": [
+        ROOT / "dataset" / "RAG_MedMCQA_dev.json",
+        ROOT / "dataset" / "RAG_MedMCQA_test.json",
+        Path(r"G:\mycodes\data_clean_gp\questions\MedMCQA\dev.json"),
+    ],
+}
 
 
 def extract_letter(text: str) -> str:
@@ -48,7 +52,7 @@ def extract_letter(text: str) -> str:
     return ch if ch in "ABCDE" else ""
 
 
-def _load_pmt(checkpoint: Path, args, device: torch.device) -> tuple[PhaseModulationTransformer, LlamaTokenizerFast]:
+def _load_pmt(checkpoint: Path, args, device: torch.device):
     tok = LlamaTokenizerFast.from_pretrained(str(ROOT / "model" / "tokenizer_en"))
     cfg = PMTConfig(
         dim=args.hidden_size,
@@ -73,66 +77,45 @@ def _load_pmt(checkpoint: Path, args, device: torch.device) -> tuple[PhaseModula
     return model, tok
 
 
-def _build_sidecar(protocol: str, args, route_cfg: dict) -> SidecarPool:
-    slot = protocol_slot(protocol, route_cfg)
-    if protocol == PROTOCOL_NO_PMT:
-        tp = {slot: args.sidecar_tp2}
-        mem = {slot: args.sidecar_mem2}
-    elif protocol == PROTOCOL_PMT_NORAG:
-        tp = {slot: args.sidecar_tp0}
-        mem = {slot: args.sidecar_mem0}
-    else:
-        tp = {slot: args.sidecar_tp1}
-        mem = {slot: args.sidecar_mem1}
+def _build_sidecar(args, route_cfg: dict) -> SidecarPool:
+    slot = protocol_slot(PROTOCOL_PMT_RAG, route_cfg)
     return SidecarPool(
         map_path=args.sidecar_map,
         backend=args.sidecar_backend,
         dtype=args.sidecar_dtype,
         max_model_len=args.sidecar_max_model_len,
-        tp_by_slot=tp,
-        mem_util_by_slot=mem,
+        tp_by_slot={slot: args.sidecar_tp},
+        mem_util_by_slot={slot: args.sidecar_mem},
         load_slots=[slot],
     )
 
 
-def run_protocol(
-    protocol: str,
+def run_rag_eval(
     data: list,
     args,
     *,
-    output_csv: Path | str | None = None,
+    output_csv: Path | str,
     dataset_name: str = "",
 ) -> dict:
     route_cfg = load_map(args.sidecar_map)
-    sidecar = _build_sidecar(protocol, args, route_cfg)
-    force_slot = protocol_slot(protocol, route_cfg)
+    sidecar = _build_sidecar(args, route_cfg)
+    force_slot = protocol_slot(PROTOCOL_PMT_RAG, route_cfg)
 
-    model = None
-    tok = None
     device = torch.device(args.device)
-    ckpt_used = None
-    if protocol_needs_pmt(protocol):
-        ckpt_used = resolve_pmt_infer_ckpt(
-            protocol,
-            explicit=args.checkpoint or None,
-            out_dir=args.out_dir or None,
-            hidden_size=args.hidden_size,
-        )
-        model, tok = _load_pmt(ckpt_used, args, device)
+    ckpt_used = resolve_pmt_infer_ckpt(
+        PROTOCOL_PMT_RAG,
+        explicit=args.checkpoint or None,
+        out_dir=args.out_dir or None,
+        hidden_size=args.hidden_size,
+    )
+    model, tok = _load_pmt(ckpt_used, args, device)
 
-    if output_csv is not None:
-        out_path = Path(output_csv)
-    else:
-        out_path = Path(args.output_csv)
-        if getattr(args, "protocol", "") == "all":
-            out_path = out_path.with_name(f"{out_path.stem}_{protocol}{out_path.suffix}")
+    out_path = Path(output_csv)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Evaluation artifacts: final letter only — no upstream intermediates
     fields = [
         "id",
         "dataset",
-        "protocol",
         "question_with_options",
         "answer_idx",
         "extracted_choice",
@@ -145,45 +128,37 @@ def run_protocol(
     with open(out_path, "w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()
-        bar = f"{dataset_name}:{protocol}" if dataset_name else protocol
+        bar = dataset_name or "rag"
         for sample in tqdm(data, desc=bar):
-            view = prepare_sample_for_protocol(sample, protocol, route_cfg)
+            view = prepare_sample_for_protocol(sample, PROTOCOL_PMT_RAG, route_cfg)
             if view is None:
                 n_skip += 1
                 continue
             gold = gold_letter(sample)
-            if protocol == PROTOCOL_NO_PMT:
-                _slot, _raw, pred = sidecar.generate_letter(
-                    view,
-                    temperature=min(args.sidecar_temperature, 0.2),
-                    max_tokens=min(args.sidecar_max_tokens, 16),
+            _slot, ctx, system = sidecar.generate(
+                view,
+                temperature=args.sidecar_temperature,
+                max_tokens=args.sidecar_max_tokens,
+                force_slot=force_slot,
+            )
+            merged = merge_system_and_user_body(system, ctx)
+            del ctx
+            prompt = format_inst_prompt_sft(merged)
+            ids = tok.encode(prompt, add_special_tokens=False)
+            if len(ids) > args.max_seq_len - args.max_new_tokens:
+                ids = ids[-(args.max_seq_len - args.max_new_tokens) :]
+            x = torch.tensor([ids], dtype=torch.long, device=device)
+            with torch.inference_mode():
+                gen = model.generate(
+                    x,
+                    max_new_tokens=args.max_new_tokens,
+                    do_sample=False,
+                    pad_token_id=tok.pad_token_id,
+                    eos_token_id=tok.eos_token_id,
                 )
-                del _raw  # do not persist upstream text
-            else:
-                _slot, ctx, system = sidecar.generate(
-                    view,
-                    temperature=args.sidecar_temperature,
-                    max_tokens=args.sidecar_max_tokens,
-                    force_slot=force_slot,
-                )
-                merged = merge_system_and_user_body(system, ctx)
-                del ctx  # drop intermediate ASAP
-                prompt = format_inst_prompt_sft(merged)
-                ids = tok.encode(prompt, add_special_tokens=False)
-                if len(ids) > args.max_seq_len - args.max_new_tokens:
-                    ids = ids[-(args.max_seq_len - args.max_new_tokens) :]
-                x = torch.tensor([ids], dtype=torch.long, device=device)
-                with torch.inference_mode():
-                    gen = model.generate(
-                        x,
-                        max_new_tokens=args.max_new_tokens,
-                        do_sample=False,
-                        pad_token_id=tok.pad_token_id,
-                        eos_token_id=tok.eos_token_id,
-                    )
-                new_ids = gen[0, x.shape[-1] :]
-                raw = tok.decode(new_ids, skip_special_tokens=True)
-                pred = extract_letter(raw)
+            new_ids = gen[0, x.shape[-1] :]
+            raw = tok.decode(new_ids, skip_special_tokens=True)
+            pred = extract_letter(raw)
 
             match = bool(pred and gold and pred == gold)
             if gold in "ABCDE":
@@ -193,7 +168,6 @@ def run_protocol(
                 {
                     "id": sample.get("id", ""),
                     "dataset": dataset_name,
-                    "protocol": protocol,
                     "question_with_options": sample.get("question_with_options", ""),
                     "answer_idx": gold,
                     "extracted_choice": pred,
@@ -201,56 +175,63 @@ def run_protocol(
                 }
             )
 
-    # Free GPU memory before next protocol in --protocol all
     del sidecar
-    if model is not None:
-        del model
+    del model
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
     acc = n_ok / max(n_scored, 1)
-    summary = {
+    return {
         "dataset": dataset_name,
-        "protocol": protocol,
         "output_csv": str(out_path),
         "n_scored": n_scored,
         "n_match": n_ok,
         "n_skip": n_skip,
         "accuracy": round(acc, 4),
+        "pmt_checkpoint": str(ckpt_used),
     }
-    if ckpt_used is not None:
-        summary["qf_checkpoint"] = str(ckpt_used)
-    return summary
+
+
+# Backward-compatible alias
+def run_protocol(protocol: str, data: list, args, **kwargs) -> dict:
+    if protocol != PROTOCOL_PMT_RAG:
+        raise ValueError(f"only {PROTOCOL_PMT_RAG} is supported")
+    return run_rag_eval(data, args, **kwargs)
 
 
 def main():
-    p = argparse.ArgumentParser(description="Protocol accuracy evaluation")
-    p.add_argument(
-        "--protocol",
-        choices=(*ALL_PROTOCOLS, "all"),
-        default="all",
-        help="no_pmt | pmt_norag | pmt_rag | all",
-    )
-    p.add_argument(
-        "--mode",
-        choices=("cascade", "sidecar_only"),
-        default="",
-        help="deprecated alias: cascade→pmt_norag+pmt_rag via all; sidecar_only→no_pmt",
-    )
+    p = argparse.ArgumentParser(description="RAG cascade accuracy evaluation")
     p.add_argument(
         "--checkpoint",
         type=str,
         default="",
-        help="optional override; by default infer auto-loads protocol-trained PhaseModulationTransformer",
+        help="optional override; default: out/run_pmt/cascade_PMT_en_*_best.pth",
     )
+    p.add_argument("--out_dir", type=str, default="", help="PMT checkpoint directory override")
     p.add_argument(
-        "--out_dir",
+        "--data_path",
         type=str,
         default="",
-        help="optional override of protocol PhaseModulationTransformer directory",
+        help="single JSON list; if empty and --datasets used, ignore",
     )
-    p.add_argument("--data_path", type=str, required=True)
-    p.add_argument("--output_csv", type=str, default=str(ROOT / "results" / "protocol_eval.csv"))
+    p.add_argument(
+        "--datasets",
+        type=str,
+        default="USMLE,MEDMCQA",
+        help="comma names from built-in map when --data_path empty",
+    )
+    p.add_argument(
+        "--output_csv",
+        type=str,
+        default="",
+        help="single-run CSV; default allocates under results/result_summary[N]/",
+    )
+    p.add_argument(
+        "--result_dir",
+        type=str,
+        default="",
+        help="explicit result_summary root; default auto-allocate",
+    )
     p.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
     p.add_argument("--dtype", choices=("bfloat16", "float16", "float32"), default="bfloat16")
     p.add_argument("--max_seq_len", type=int, default=4096)
@@ -266,34 +247,69 @@ def main():
     p.add_argument("--sidecar_max_tokens", type=int, default=4096)
     p.add_argument("--sidecar_temperature", type=float, default=0.7)
     p.add_argument("--sidecar_max_model_len", type=int, default=8192)
-    p.add_argument("--sidecar_tp0", type=int, default=1)
-    p.add_argument("--sidecar_tp1", type=int, default=1)
-    p.add_argument("--sidecar_tp2", type=int, default=1)
-    p.add_argument("--sidecar_mem0", type=float, default=0.45)
-    p.add_argument("--sidecar_mem1", type=float, default=0.45)
-    p.add_argument("--sidecar_mem2", type=float, default=0.85)
+    p.add_argument("--sidecar_tp", type=int, default=1)
+    p.add_argument("--sidecar_mem", type=float, default=0.85)
+    # deprecated aliases kept so old shells do not crash
+    p.add_argument("--protocol", type=str, default=PROTOCOL_PMT_RAG, help=argparse.SUPPRESS)
+    p.add_argument("--sidecar_tp0", type=int, default=0, help=argparse.SUPPRESS)
+    p.add_argument("--sidecar_tp1", type=int, default=0, help=argparse.SUPPRESS)
+    p.add_argument("--sidecar_tp2", type=int, default=0, help=argparse.SUPPRESS)
+    p.add_argument("--sidecar_mem0", type=float, default=0.0, help=argparse.SUPPRESS)
+    p.add_argument("--sidecar_mem1", type=float, default=0.0, help=argparse.SUPPRESS)
+    p.add_argument("--sidecar_mem2", type=float, default=0.0, help=argparse.SUPPRESS)
     args = p.parse_args()
 
-    # Backward-compatible --mode mapping
-    if args.mode and args.protocol == "all":
-        if args.mode == "sidecar_only":
-            args.protocol = PROTOCOL_NO_PMT
-        elif args.mode == "cascade":
-            # Prefer explicit single protocol via --protocol; cascade alone is ambiguous
-            args.protocol = "all"
+    if args.sidecar_tp1:
+        args.sidecar_tp = args.sidecar_tp1
+    elif args.sidecar_tp0:
+        args.sidecar_tp = args.sidecar_tp0
+    if args.sidecar_mem1:
+        args.sidecar_mem = args.sidecar_mem1
+    elif args.sidecar_mem0:
+        args.sidecar_mem = args.sidecar_mem0
+    elif args.sidecar_mem2:
+        args.sidecar_mem = args.sidecar_mem2
 
-    data = json.loads(Path(args.data_path).read_text(encoding="utf-8"))
-    if not isinstance(data, list):
-        raise SystemExit("data_path must be a JSON list")
-    if args.limit > 0:
-        data = data[: args.limit]
+    result_root = Path(args.result_dir) if args.result_dir else allocate_result_summary_dir()
+    result_root.mkdir(parents=True, exist_ok=True)
 
-    protocols = list(ALL_PROTOCOLS) if args.protocol == "all" else [args.protocol]
+    jobs: list[tuple[str, Path]] = []
+    if args.data_path:
+        jobs.append(("custom", Path(args.data_path)))
+    else:
+        for name in [x.strip() for x in args.datasets.split(",") if x.strip()]:
+            key = name.upper()
+            cands = DEFAULT_DATASETS.get(key)
+            if cands is None:
+                raise SystemExit(f"unknown dataset {name}; known={list(DEFAULT_DATASETS)}")
+            path = next((p for p in cands if p.is_file()), None)
+            if path is None:
+                print(f"[warn] missing dataset files for {key}, skip: {cands}", flush=True)
+                continue
+            jobs.append((key, path))
+
+    if not jobs:
+        raise SystemExit("no datasets to evaluate")
+
     summaries = []
-    for proto in protocols:
-        summaries.append(run_protocol(proto, data, args))
+    for ds_name, data_path in jobs:
+        data = json.loads(data_path.read_text(encoding="utf-8"))
+        if not isinstance(data, list):
+            raise SystemExit(f"data must be JSON list: {data_path}")
+        if args.limit > 0:
+            data = data[: args.limit]
+        if args.output_csv and len(jobs) == 1:
+            out_csv = Path(args.output_csv)
+        else:
+            out_csv = result_root / f"{ds_name}_rag_eval.csv"
+        summaries.append(run_rag_eval(data, args, output_csv=out_csv, dataset_name=ds_name))
 
-    print(json.dumps({"results": summaries}, indent=2, ensure_ascii=False), flush=True)
+    summary_path = result_root / "summary.json"
+    summary_path.write_text(
+        json.dumps({"results": summaries, "result_dir": str(result_root)}, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    print(json.dumps({"results": summaries, "result_dir": str(result_root)}, indent=2, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":

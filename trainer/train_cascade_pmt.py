@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-"""Cascade train: protocol-specific PhaseModulationTransformer SFT (online upstream context).
+"""RAG train for the Phase-modulation-transformer stack (ckpt_0 + PMT) SFT.
 
-Protocols:
-  pmt_norag — non-retrieval branch + PhaseModulationTransformer → out/run_pmt_norag/
-  pmt_rag   — retrieval-augmented branch + PhaseModulationTransformer → out/run_pmt_rag/
-
-Training always initializes from the released pretrained PhaseModulationTransformer weights.
-Inference must load the protocol-trained *_best.pth (see inference_cascade_pmt.py).
-Upstream intermediate text is never written to disk.
+Always uses retrieval-augmented samples. Outputs → out/run_pmt/.
+Training initializes from released pretrained PhaseModulationTransformer weights.
+Cascade intermediate text is never written to disk.
 """
 
 from __future__ import annotations
@@ -31,7 +27,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from model.PMTConfig import PMTConfig
 from model.pmtmodel import PhaseModulationTransformer
 from model.pmt_protocol import (
-    PROTOCOL_PMT_NORAG,
     PROTOCOL_PMT_RAG,
     default_out_dir,
     prepare_sample_for_protocol,
@@ -98,18 +93,18 @@ def masked_ce(logits, y, mask) -> torch.Tensor:
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Protocol-specific cascade PhaseModulationTransformer SFT")
+    p = argparse.ArgumentParser(description="RAG cascade PhaseModulationTransformer SFT")
     p.add_argument(
         "--protocol",
-        choices=(PROTOCOL_PMT_NORAG, PROTOCOL_PMT_RAG),
-        required=True,
-        help="pmt_norag or pmt_rag (separate PhaseModulationTransformer checkpoints)",
+        choices=(PROTOCOL_PMT_RAG,),
+        default=PROTOCOL_PMT_RAG,
+        help="only pmt_rag (retrieval-augmented) is supported",
     )
     p.add_argument(
         "--out_dir",
         type=str,
         default="",
-        help="default: out/run_pmt_norag or out/run_pmt_rag by protocol",
+        help="default: out/run_pmt",
     )
     p.add_argument(
         "--init_ckpt",
@@ -139,10 +134,10 @@ def parse_args():
     p.add_argument("--sidecar_max_tokens", type=int, default=4096)
     p.add_argument("--sidecar_temperature", type=float, default=0.7)
     p.add_argument("--sidecar_max_model_len", type=int, default=8192)
-    p.add_argument("--sidecar_tp0", type=int, default=1, help="vLLM TP for norag branch")
-    p.add_argument("--sidecar_tp1", type=int, default=1, help="vLLM TP for rag branch")
-    p.add_argument("--sidecar_mem0", type=float, default=0.45)
-    p.add_argument("--sidecar_mem1", type=float, default=0.45)
+    p.add_argument("--sidecar_tp0", type=int, default=1, help="vLLM TP (alias)")
+    p.add_argument("--sidecar_tp1", type=int, default=1, help="vLLM TP for ckpt_0")
+    p.add_argument("--sidecar_mem0", type=float, default=0.85)
+    p.add_argument("--sidecar_mem1", type=float, default=0.85)
     p.add_argument("--limit", type=int, default=0, help="debug: only first N samples")
     return p.parse_args()
 
@@ -182,8 +177,8 @@ def main():
         rank = dist.get_rank()
         samples = [s for i, s in enumerate(samples) if i % world == rank]
 
-    tp = {force_slot: args.sidecar_tp0 if args.protocol == PROTOCOL_PMT_NORAG else args.sidecar_tp1}
-    mem = {force_slot: args.sidecar_mem0 if args.protocol == PROTOCOL_PMT_NORAG else args.sidecar_mem1}
+    tp = {force_slot: args.sidecar_tp1 or args.sidecar_tp0}
+    mem = {force_slot: args.sidecar_mem1 or args.sidecar_mem0}
     sidecar = SidecarPool(
         map_path=args.sidecar_map,
         backend=args.sidecar_backend,

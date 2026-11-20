@@ -1,38 +1,26 @@
-# 检查点目录
+# parameters/
 
-大体积文件不纳入 Git。请自 ModelScope 获取：
+大文件托管于 ModelScope（勿提交 Git）：
 
 https://www.modelscope.cn/models/zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
 
-## 级联上游模块
+## 系统权重
 
-| 路径 | 说明 |
+| 目录 | 说明 |
 |------|------|
-| `ckpt_a/` | `pmt_norag` 上游模块（`model/sidecar_map.json`） |
-| `ckpt_b/` | `pmt_rag` 上游模块 |
-| `ckpt_c/` | `no_pmt` 协议上游模块（不经 Phase-modulation-transformer） |
-
-获取示例（项目根目录）：
+| `ckpt_0/` | Phase-modulation-transformer 系统权重（检索增强流程，与 PMT 一体使用） |
 
 ```bash
+pip install -U modelscope
 REPO=zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
-python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_a/**'])"
-python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_b/**'])"
-python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_c/**'])"
+python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_0/**'])"
 ```
 
-获取后可执行 `python scripts/scrub_ckpt_metadata.py` 清理 README / 路径类元数据（维护用途）。
+路由见 `model/sidecar_map.json`（`parameters/ckpt_0`，始终检索增强）。
 
 ## Phase-modulation-transformer 初始化权重（归档包 `01`）
 
-```bash
-PACKS="01" bash scripts/download_modelscope_assets.sh   # → parameters/
-```
+- `sft_PMT_en_1024.pth`：检索增强训练 / 评测初始化
+- `PMT_Base_300M/`、`pretrain_PMT_en_1024_final.pth`：预训练相关
 
-| 路径 | 说明 | 包 |
-|------|------|-----|
-| `PMT_Base_300M/` | 预训练权重（HF）；自行 `train_full_sft.py` 时的前置模型 | `01` |
-| `pretrain_PMT_en_1024_final.pth` | 同上 Torch 格式；`train_full_sft.py` 实际加载（可由 Base 转换） | `01` 或本地转换 |
-| `sft_PMT_en_1024.pth` | 通用 SFT 产物；级联协议默认初始化 | `01` 或本地 SFT |
-
-可用 `tools/convert_model.py` 在 `.pth` 与 Hugging Face 格式间转换。详情见根目录 README「通用指令微调」。
+训练后的 PMT 检查点默认写在 `out/run_pmt/`（不在本目录）。多组消融结果见 `results/result_summary/`。

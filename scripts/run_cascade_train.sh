@@ -1,46 +1,28 @@
 #!/usr/bin/env bash
-# Protocol-specific PhaseModulationTransformer SFT.
-#   PROTOCOL=pmt_norag|pmt_rag (required)
-#   Train always loads released pretrained PhaseModulationTransformer (INIT / pack 01).
-#   Outputs go to out/run_pmt_norag or out/run_pmt_rag.
+# RAG Phase-modulation-transformer SFT (ckpt_0 + PMT as one stack).
+#   Always retrieval-augmented. Outputs → out/run_pmt/
 #
-#   PROTOCOL=pmt_norag bash scripts/run_cascade_train.sh
-#   PROTOCOL=pmt_rag   bash scripts/run_cascade_train.sh
+#   bash scripts/run_cascade_train.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-PROTOCOL="${PROTOCOL:-}"
-if [[ -z "$PROTOCOL" ]]; then
-  echo "USAGE: PROTOCOL=pmt_norag|pmt_rag bash scripts/run_cascade_train.sh" >&2
-  exit 1
-fi
-
 DATA="${DATA:-$ROOT/dataset/RAG_MedQA_US_train_10178.json}"
 INIT="${INIT:-$ROOT/parameters/sft_PMT_en_1024.pth}"
-if [[ "$PROTOCOL" == "pmt_norag" ]]; then
-  OUT="${OUT:-$ROOT/out/run_pmt_norag}"
-elif [[ "$PROTOCOL" == "pmt_rag" ]]; then
-  OUT="${OUT:-$ROOT/out/run_pmt_rag}"
-else
-  echo "PROTOCOL must be pmt_norag or pmt_rag" >&2
-  exit 1
-fi
+OUT="${OUT:-$ROOT/out/run_pmt}"
 
 NPROC="${NPROC:-1}"
 SIDECAR_BACKEND="${SIDECAR_BACKEND:-transformers}"
 mkdir -p "$OUT"
 
 COMMON=(
-  --protocol "$PROTOCOL"
+  --protocol pmt_rag
   --data_path "$DATA"
   --init_ckpt "$INIT"
   --out_dir "$OUT"
   --sidecar_backend "$SIDECAR_BACKEND"
-  --sidecar_tp0 "${SIDECAR_TP0:-1}"
-  --sidecar_tp1 "${SIDECAR_TP1:-1}"
-  --sidecar_mem0 "${SIDECAR_MEM0:-0.4}"
-  --sidecar_mem1 "${SIDECAR_MEM1:-0.4}"
+  --sidecar_tp1 "${SIDECAR_TP:-1}"
+  --sidecar_mem1 "${SIDECAR_MEM:-0.85}"
   --batch_size 1
   --accumulation_steps "${ACCUM:-8}"
   --epochs "${EPOCHS:-1}"

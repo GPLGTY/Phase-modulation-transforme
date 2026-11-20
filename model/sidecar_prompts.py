@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 SYSTEM = (
-    "You are an expert in intent recognition. Based on the provided information, "
-    "you can determine which of the options A through E the intent of the given "
-    "text corresponds to."
+    "You are an expert at answering medical multiple-choice questions. "
+    "Based on the provided information, select which of the options A through E "
+    "best answers the given question."
 )
 
 PROMPT_LETTER = """You are answering a multiple-choice medical question.
@@ -18,7 +18,7 @@ Question:
 
 LEAD = "In response to your question, my analysis process and answer are as follows:"
 
-PROMPT_PLAIN = """You write the user message for an intent-recognition example. Output only the user message, in English. No JSON, no system line, no assistant line, no title.
+PROMPT_PLAIN = """You write the user message for a medical multiple-choice example. Output only the user message, in English. No JSON, no system line, no assistant line, no title.
 
 You are NOT given the correct answer. Analyze the question and options using your own medical knowledge, then choose the single best option yourself.
 
@@ -51,7 +51,7 @@ Question:
 {question_with_options}
 """
 
-PROMPT_AUGMENTED = """You write the user message for an intent-recognition example. Output only the user message, in English. No JSON, no system line, no assistant line, no title.
+PROMPT_AUGMENTED = """You write the user message for a medical multiple-choice example. Output only the user message, in English. No JSON, no system line, no assistant line, no title.
 
 You are NOT given the correct answer. Below are medical knowledge passages retrieved from reference textbooks; they may or may not be relevant — use them only when helpful. Analyze the question and options, then choose the single best option yourself.
 

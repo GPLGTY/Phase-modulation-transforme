@@ -36,11 +36,6 @@ declare -A PACK_FILE=(
   [08]="08_questions.tar"
 )
 
-# Backward-compatible aliases (old remote names)
-declare -A PACK_FILE_FALLBACK=(
-  [04]="04_medqa_intent_json.tar"
-)
-
 if ! command -v modelscope >/dev/null 2>&1; then
   echo "modelscope CLI missing; installing: pip install -U modelscope" >&2
   pip install -U "modelscope>=1.11.0"
@@ -65,7 +60,6 @@ if [[ "$FORCE" == "1" ]]; then
   dl_args+=(--force)
 fi
 
-# Prefer new pack names; if 04 missing remotely, retry with legacy tar name
 modelscope "${dl_args[@]}" "${files[@]}" SHA256SUMS.txt MANIFEST.md 2>/dev/null \
   || modelscope "${dl_args[@]}" "${files[@]}" \
   || true
@@ -73,15 +67,8 @@ modelscope "${dl_args[@]}" "${files[@]}" SHA256SUMS.txt MANIFEST.md 2>/dev/null 
 for key in $PACKS; do
   fname="${PACK_FILE[$key]}"
   src="$(find "$DOWNLOAD_DIR" -name "$fname" -type f | head -n 1 || true)"
-  if [[ -z "$src" && -n "${PACK_FILE_FALLBACK[$key]:-}" ]]; then
-    alt="${PACK_FILE_FALLBACK[$key]}"
-    echo "primary $fname missing; trying legacy $alt"
-    modelscope "${dl_args[@]}" "$alt" || true
-    src="$(find "$DOWNLOAD_DIR" -name "$alt" -type f | head -n 1 || true)"
-    fname="$alt"
-  fi
   if [[ -z "$src" ]]; then
-    echo "missing pack file for $key" >&2
+    echo "missing pack file for $key ($fname)" >&2
     exit 1
   fi
   if [[ "$SKIP_EXTRACT" == "1" ]]; then
@@ -106,4 +93,4 @@ echo "  ls -d dataset/pipeline_data/textbooks/en_json 2>/dev/null || true"
 echo "  ls -d dataset/pipeline_data/vector_stores/en/stella-base-en-v2 2>/dev/null || true"
 echo "  ls -lh dataset/pipeline_data/questions/US/test.jsonl 2>/dev/null || true"
 echo "benchmark:"
-echo "  bash scripts/run_protocol_benchmark.sh"
+echo "  bash scripts/run_cascade_infer.sh"

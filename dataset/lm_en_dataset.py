@@ -1,7 +1,7 @@
 import json
 import random
 import re
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict
 from torch.utils.data import Dataset, DataLoader
 import torch
 
@@ -145,90 +145,6 @@ class SFTDataset(Dataset):
         prompt_ids = self.truncate_ids(prompt_ids, self.max_length)
 
         # 补齐到 max_length
-        if len(prompt_ids) < self.max_length:
-            prompt_ids += [self.tokenizer.pad_token_id] * (
-                self.max_length - len(prompt_ids)
-            )
-
-        X = torch.tensor(prompt_ids[:-1], dtype=torch.long)
-        Y = torch.tensor(prompt_ids[1:], dtype=torch.long)
-        loss_mask = torch.tensor(self.make_loss_mask(prompt_ids)[1:], dtype=torch.long)
-
-        return X, Y, loss_mask
-
-
-def _merge_system_user_for_inst(system: Optional[str], user_body: Optional[str]) -> str:
-    """
-    与 inference.merge_system_and_user_body 一致：将 system 与 user 拼成 [INST] 内单段正文，
-    对齐现有英文 SFT 的 `<s>[INST] … [/INST]` 训练格式。
-    """
-    b = (user_body or "").strip()
-    s = (system or "").strip() if system else ""
-    if s:
-        return f"{s}\n\n{b}"
-    return b
-
-
-class SFTIntentMessagesDataset(SFTDataset):
-    """
-    读取 MedQA 意图微调 JSON 数组（如 RAG_MedQA_US_train_10178_intent.json）：
-    顶层含 `messages`: [system, user, assistant]，将 system+user 合并为 user 槽，
-    再按父类逻辑构造与 `SFTDataset` 相同的 Llama-INST 字符串与 loss_mask。
-    """
-
-    def __init__(self, json_path: str, tokenizer, max_length: int = 4096):
-        Dataset.__init__(self)
-        self.tokenizer = tokenizer
-        self.max_length = max_length
-        self.bos_token_id = tokenizer.bos_token_id
-        self.eos_token_id = tokenizer.eos_token_id
-        self.inst_start = "[INST]"
-        self.inst_end = "[/INST]"
-        self.samples = self._load_messages_json_array(json_path)
-
-    def _load_messages_json_array(self, path: str) -> List[Dict]:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        if not isinstance(data, list):
-            raise ValueError(f"期望 JSON 顶层为数组: {path}")
-        return data
-
-    @staticmethod
-    def _parse_messages(messages: List[Dict]) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-        system_txt, user_txt, assistant_txt = None, None, None
-        for m in messages:
-            if not isinstance(m, dict):
-                continue
-            role = m.get("role")
-            content = (m.get("content") or "").strip()
-            if role == "system":
-                system_txt = content
-            elif role == "user":
-                user_txt = content
-            elif role == "assistant":
-                assistant_txt = content
-        return system_txt, user_txt, assistant_txt
-
-    def __getitem__(self, idx: int):
-        sample = self.samples[idx]
-        msgs = sample.get("messages")
-        if not isinstance(msgs, list):
-            raise ValueError(f"样本 {idx} 缺少合法 messages 列表")
-        system_txt, user_txt, assistant_txt = self._parse_messages(msgs)
-        if not user_txt or not assistant_txt:
-            raise ValueError(
-                f"样本 {idx} 需同时包含 role=user 与 role=assistant 的 content"
-            )
-        merged_user = _merge_system_user_for_inst(system_txt, user_txt)
-        conversations = [
-            {"role": "user", "content": merged_user},
-            {"role": "assistant", "content": assistant_txt},
-        ]
-        prompt_text = self.build_prompt(conversations)
-
-        prompt_ids = self.tokenizer.encode(prompt_text, add_special_tokens=False)
-        prompt_ids = self.truncate_ids(prompt_ids, self.max_length)
-
         if len(prompt_ids) < self.max_length:
             prompt_ids += [self.tokenizer.pad_token_id] * (
                 self.max_length - len(prompt_ids)

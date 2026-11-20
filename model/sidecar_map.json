@@ -1,20 +1,16 @@
 {
   "slots": {
-    "0": "parameters/ckpt_a",
-    "1": "parameters/ckpt_b",
-    "2": "parameters/ckpt_c"
+    "0": "parameters/ckpt_0"
   },
   "probe": {
     "path": ["retrieve_info", "knowledges_info", "knowledges"],
     "rule": "list_nonempty"
   },
   "default_slot": "0",
-  "hit_slot": "1",
-  "solo_slot": "2",
-  "cascade_slots": ["0", "1"],
+  "hit_slot": "0",
+  "solo_slot": "0",
+  "cascade_slots": ["0"],
   "prompt_slot": {
-    "0": "plain",
-    "1": "augmented",
-    "2": "letter"
+    "0": "augmented"
   }
 }

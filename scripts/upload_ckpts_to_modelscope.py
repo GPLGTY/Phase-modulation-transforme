@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Upload parameters/ckpt_a|ckpt_b|ckpt_c to the project ModelScope repo.
+"""Upload parameters/ckpt_0 (system weights) to the project ModelScope repo.
 
 Auth: set env MODELSCOPE_API_TOKEN (do NOT commit the token).
 
   set MODELSCOPE_API_TOKEN=...
   python scripts/upload_ckpts_to_modelscope.py
-  # only one slot:
-  SLOTS=ckpt_c python scripts/upload_ckpts_to_modelscope.py
+  SLOTS=ckpt_0 python scripts/upload_ckpts_to_modelscope.py
 """
 
 from __future__ import annotations
@@ -18,9 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REPO_ID = "zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering"
 ALL_SLOTS = [
-    (ROOT / "parameters" / "ckpt_a", "parameters/ckpt_a"),
-    (ROOT / "parameters" / "ckpt_b", "parameters/ckpt_b"),
-    (ROOT / "parameters" / "ckpt_c", "parameters/ckpt_c"),
+    (ROOT / "parameters" / "ckpt_0", "parameters/ckpt_0"),
 ]
 
 
@@ -37,7 +34,7 @@ def main() -> None:
 
     want = {
         s.strip()
-        for s in (os.environ.get("SLOTS") or "ckpt_a,ckpt_b,ckpt_c").split(",")
+        for s in (os.environ.get("SLOTS") or "ckpt_0").split(",")
         if s.strip()
     }
     local_slots = [(d, p) for d, p in ALL_SLOTS if d.name in want]
@@ -51,12 +48,10 @@ def main() -> None:
             repo_id=REPO_ID,
             folder_path=str(local_dir),
             path_in_repo=path_in_repo,
-            commit_message=f"add {path_in_repo}",
+            commit_message=f"add/update {path_in_repo}",
             token=token,
         )
         print(f"done {path_in_repo}", flush=True)
-
-    print("upload finished", flush=True)
 
 
 if __name__ == "__main__":

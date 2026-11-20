@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
-"""Convert legacy *_intent.json samples to retrieval-pipeline schema.
+"""Normalize MedQA JSON to the retrieval-pipeline schema.
 
 Keeps fields produced by ``generate_question_with_knowledges.py``; drops
-``messages`` and other offline-Intent intermediates.
-
-Also renames canonical files:
-
-  RAG_MedQA_US_train_10178_intent.json → RAG_MedQA_US_train_10178.json
-  RAG_MedQA_US_dev_1272_intent.json    → RAG_MedQA_US_dev_1272.json
-  RAG_MedQA_US_test_1273_intent.json   → RAG_MedQA_US_test_1273.json
+``messages`` and other offline intermediates. Operates in-place on canonical
+``RAG_MedQA_US_*.json`` files under ``dataset/``.
 """
 
 from __future__ import annotations
@@ -31,16 +26,15 @@ KEEP_KEYS = (
     "retrieve_info",
 )
 
-CANONICAL = {
-    "RAG_MedQA_US_train_10178_intent.json": "RAG_MedQA_US_train_10178.json",
-    "RAG_MedQA_US_dev_1272_intent.json": "RAG_MedQA_US_dev_1272.json",
-    "RAG_MedQA_US_test_1273_intent.json": "RAG_MedQA_US_test_1273.json",
-}
+CANONICAL = (
+    "RAG_MedQA_US_train_10178.json",
+    "RAG_MedQA_US_dev_1272.json",
+    "RAG_MedQA_US_test_1273.json",
+)
 
 
 def strip_sample(sample: dict) -> dict:
     out = {k: sample[k] for k in KEEP_KEYS if k in sample}
-    # Ensure cascade-critical fields exist when possible
     if "answer_idx" not in out and sample.get("gold_letter"):
         out["answer_idx"] = sample["gold_letter"]
     if "question_with_options" not in out and sample.get("question"):
@@ -63,17 +57,12 @@ def convert_file(src: Path, dst: Path) -> int:
 
 
 def main():
-    p = argparse.ArgumentParser(description="Strip Intent intermediates → retrieval JSON")
+    p = argparse.ArgumentParser(description="Strip offline intermediates → retrieval JSON")
     p.add_argument(
         "--dataset_dir",
         type=str,
         default=str(ROOT / "dataset"),
         help="directory containing MedQA JSON samples",
-    )
-    p.add_argument(
-        "--in_place_legacy",
-        action="store_true",
-        help="also convert any explicitly passed --input",
     )
     p.add_argument("--input", type=str, default="", help="optional single input JSON")
     p.add_argument("--output", type=str, default="", help="optional single output JSON")
@@ -81,23 +70,19 @@ def main():
 
     if args.input:
         src = Path(args.input)
-        dst = Path(args.output) if args.output else src.with_name(src.name.replace("_intent", ""))
+        dst = Path(args.output) if args.output else src
         n = convert_file(src, dst)
         print(f"wrote {n} samples → {dst}", flush=True)
         return
 
     data_dir = Path(args.dataset_dir)
-    for old_name, new_name in CANONICAL.items():
-        src = data_dir / old_name
-        dst = data_dir / new_name
-        if not src.is_file():
-            if dst.is_file():
-                print(f"ok (already canonical): {dst.name}", flush=True)
-            else:
-                print(f"skip missing: {src.name}", flush=True)
+    for name in CANONICAL:
+        path = data_dir / name
+        if not path.is_file():
+            print(f"skip missing: {name}", flush=True)
             continue
-        n = convert_file(src, dst)
-        print(f"{old_name} → {new_name} ({n})", flush=True)
+        n = convert_file(path, path)
+        print(f"normalized {name} ({n})", flush=True)
 
 
 if __name__ == "__main__":
