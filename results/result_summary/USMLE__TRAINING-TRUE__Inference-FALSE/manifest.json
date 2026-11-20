@@ -1,6 +1,6 @@
 {
-  "checkpoint": "/root/private_data/guopeng/projects/QubitFormer-main/out/run_sft_p3_5/sft_pmt_QF_en_1024_best.pth",
-  "data_path": "/root/private_data/guopeng/projects/QubitFormer-main/dataset/RAG_MedQA_US_test_1273.json",
+  "checkpoint": "out/run_sft_p3_5/sft_pmt_QF_en_1024_best.pth",
+  "data_path": "dataset/RAG_MedQA_US_test_1273.json",
   "n_samples": 1273,
   "temperatures": [
     1.1,
@@ -33,7 +33,7 @@
       "n_error": 0,
       "accuracy": 0.9355852317360566,
       "elapsed_sec": 990.8,
-      "output_csv": "/root/private_data/guopeng/projects/QubitFormer-main/results/ablation_p3_5/eval_temp1p1_ntk0p8.csv",
+      "output_csv": "results/ablation_p3_5/eval_temp1p1_ntk0p8.csv",
       "run_id": 1
     },
     {
@@ -47,7 +47,7 @@
       "n_error": 0,
       "accuracy": 0.9347996857816182,
       "elapsed_sec": 826.6,
-      "output_csv": "/root/private_data/guopeng/projects/QubitFormer-main/results/ablation_p3_5/eval_temp1p3_ntk0p8.csv",
+      "output_csv": "results/ablation_p3_5/eval_temp1p3_ntk0p8.csv",
       "run_id": 2
     },
     {
@@ -61,7 +61,7 @@
       "n_error": 0,
       "accuracy": 0.9355852317360566,
       "elapsed_sec": 735.3,
-      "output_csv": "/root/private_data/guopeng/projects/QubitFormer-main/results/ablation_p3_5/eval_temp1p5_ntk0p8.csv",
+      "output_csv": "results/ablation_p3_5/eval_temp1p5_ntk0p8.csv",
       "run_id": 3
     },
     {
@@ -75,7 +75,7 @@
       "n_error": 0,
       "accuracy": 0.9324430479183032,
       "elapsed_sec": 744.1,
-      "output_csv": "/root/private_data/guopeng/projects/QubitFormer-main/results/ablation_p3_5/eval_temp0p7_ntk0p8.csv",
+      "output_csv": "results/ablation_p3_5/eval_temp0p7_ntk0p8.csv",
       "run_id": 4
     },
     {
@@ -89,7 +89,7 @@
       "n_error": 0,
       "accuracy": 0.9332285938727416,
       "elapsed_sec": 741.8,
-      "output_csv": "/root/private_data/guopeng/projects/QubitFormer-main/results/ablation_p3_5/eval_temp0p9_ntk0p8.csv",
+      "output_csv": "results/ablation_p3_5/eval_temp0p9_ntk0p8.csv",
       "run_id": 5
     }
   ]
