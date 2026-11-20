@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 
-English: [README_EN.md](README_EN.md)
+English: [README.md](README.md) · [README_EN.md](README_EN.md)
 
 GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 
@@ -15,7 +15,7 @@ GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 |------|------|------|
 | 系统权重 | `parameters/ckpt_0/` | ModelScope 目录直传 |
 | PMT 发布权重 | `parameters/sft_PMT_en_1024.pth` | 归档包 `01`；检索增强训练 / 评测的默认初始化 |
-| 本仓库训练产物 | `out/run_pmt/cascade_PMT_en_1024_best.pth` | 在发布权重上做检索增强训练后得到 |
+| 本仓库训练产物 | `out/run_pmt/cascade_PMT_en_1024_best.pth` | 检索增强训练得到的最佳 PMT；推荐推理设置 `temperature=0.7`、`ntk_alpha=0.4` |
 | **已完成的参考评测 / 消融结果** | **`results/result_summary/`** | **仓库内已跑通并 git 追踪的 USMLE / MedMCQA 结果**（准确率总表与逐条 CSV）；说明见 [results/result_summary/README.md](results/result_summary/README.md) |
 | 新跑评测输出 | `results/result_summaryN/`（N=1,2,…） | 若 `result_summary` 已存在则自动递增目录，**不覆盖**上述参考结果；明细 CSV **不含**中间输入文本列 |
 
@@ -335,7 +335,7 @@ cp dataset/pipeline_data/questions_with_knowledge/MedMCQA/train/retrive_use_ques
 |------|------|------|
 | `parameters/ckpt_0/` | 系统权重；推理与训练时一体流程默认加载 | ModelScope 目录直传 |
 | `parameters/sft_PMT_en_1024.pth` | 已发布的 PMT 权重；检索增强训练的默认初始化 | 包 `01` |
-| `out/run_pmt/cascade_PMT_en_1024_best.pth` | 检索增强训练产出的最佳 PMT 检查点；评测默认加载 | 本地训练 |
+| `out/run_pmt/cascade_PMT_en_1024_best.pth` | 检索增强训练产出的最佳 PMT；评测默认加载；推荐 `temperature=0.7`、`ntk_alpha=0.4` | 本地训练 |
 
 获取顺序建议：
 
@@ -375,31 +375,45 @@ DATASETS=USMLE,MEDMCQA bash scripts/run_cascade_infer.sh
 
 ### 指定某个 PMT 检查点做推理
 
-一体流程仍会加载 `parameters/ckpt_0/`；通过 `CHECKPOINT`（或 `--checkpoint`）指定要评测的 PMT 权重：
+一体流程仍会加载 `parameters/ckpt_0/`；通过 `CHECKPOINT`（或 `--checkpoint`）指定要评测的 PMT 权重。
+
+**示例：加载 `out/run_pmt/cascade_PMT_en_1024_best.pth`（推荐 `temperature=0.7`，`ntk_alpha=0.4`）**
 
 ```bash
-# 使用本仓库训练得到的 best 权重
+# 单点设置推理 / 消融（TRAINING=TRUE, Inference=TRUE）
+CHECKPOINT=out/run_pmt/cascade_PMT_en_1024_best.pth \
+TEMPERATURES=0.7 \
+NTK_ALPHAS=0.4 \
+TRAIN_NTK=TRUE \
+INFER_NTK=TRUE \
+DATA=dataset/RAG_MedQA_US_test_1273.json \
+DATASET_NAME=USMLE \
+  bash scripts/run_ablation_temp_ntk.sh
+```
+
+等价 Python 入口：
+
+```bash
+python scripts/run_ablation_temp_ntk.py \
+  --checkpoint out/run_pmt/cascade_PMT_en_1024_best.pth \
+  --temperatures 0.7 \
+  --ntk_alphas 0.4 \
+  --train_ntk TRUE \
+  --infer_ntk TRUE \
+  --data_path dataset/RAG_MedQA_US_test_1273.json \
+  --dataset_name USMLE
+```
+
+其他常用写法：
+
+```bash
+# 默认评测入口（加载 out/run_pmt/cascade_PMT_en_1024_best.pth）
 CHECKPOINT=out/run_pmt/cascade_PMT_en_1024_best.pth \
   DATASETS=USMLE bash scripts/run_cascade_infer.sh
 
 # 使用发布的初始化权重（未做本仓库检索增强训练时也可评测）
 CHECKPOINT=parameters/sft_PMT_en_1024.pth \
   DATASETS=USMLE bash scripts/run_cascade_infer.sh
-
-# 仅评测单个 JSON，并指定结果目录
-CHECKPOINT=out/run_pmt_exp1/cascade_PMT_en_1024_best.pth \
-  DATA=dataset/RAG_MedQA_US_test_1273.json \
-  DATASETS=USMLE \
-  RESULT_DIR=results/result_summary_manual \
-  bash scripts/run_cascade_infer.sh
-```
-
-等价 Python 入口：
-
-```bash
-python inference_cascade_pmt.py \
-  --datasets USMLE \
-  --checkpoint out/run_pmt/cascade_PMT_en_1024_best.pth
 ```
 
 ## 许可

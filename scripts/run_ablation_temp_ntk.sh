@@ -16,6 +16,12 @@ fi
 if [[ -n "${RESULT_DIR:-}" ]]; then
   EXTRA+=(--result_dir "$RESULT_DIR")
 fi
+if [[ -n "${TEMPERATURES:-}" ]]; then
+  EXTRA+=(--temperatures "$TEMPERATURES")
+fi
+if [[ -n "${NTK_ALPHAS:-}" ]]; then
+  EXTRA+=(--ntk_alphas "$NTK_ALPHAS")
+fi
 
 python3 "$ROOT/scripts/run_ablation_temp_ntk.py" \
   --data_path "$DATA" \

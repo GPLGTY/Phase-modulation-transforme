@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 
-中文：[README_CN.md](README_CN.md)
+中文：[README_CN.md](README_CN.md) · English home: [README.md](README.md)
 
 GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 
@@ -15,7 +15,7 @@ Weights you can download and use directly (**no** local pretraining or general i
 |------|------|------|
 | System weights | `parameters/ckpt_0/` | ModelScope directory download |
 | Released PMT | `parameters/sft_PMT_en_1024.pth` | Pack `01`; default init for retrieval-augmented train / eval |
-| Trained PMT (this repo) | `out/run_pmt/cascade_PMT_en_1024_best.pth` | After retrieval-augmented training on the released weights |
+| Trained PMT (this repo) | `out/run_pmt/cascade_PMT_en_1024_best.pth` | Best PMT after retrieval-augmented training; recommended inference settings `temperature=0.7`, `ntk_alpha=0.4` |
 | **Finished reference eval / ablation** | **`results/result_summary/`** | **Completed USMLE / MedMCQA results tracked in git** (accuracy summary + per-sample CSVs); see [results/result_summary/README.md](results/result_summary/README.md) |
 | New local eval output | `results/result_summaryN/` (N=1,2,…) | Auto-increments if `result_summary` already exists so reference results are **not** overwritten; detail CSVs **omit** intermediate input-text columns |
 
@@ -335,7 +335,7 @@ After `PACKS="01"` (or `PACKS="01 04"`) and downloading `ckpt_0`, train / eval p
 |------|------|------|
 | `parameters/ckpt_0/` | System weights; loaded by default in the integrated train/infer pipeline | ModelScope directory download |
 | `parameters/sft_PMT_en_1024.pth` | Released PMT; default init for retrieval-augmented training | Pack `01` |
-| `out/run_pmt/cascade_PMT_en_1024_best.pth` | Best PMT from retrieval-augmented training; default eval load | Local training |
+| `out/run_pmt/cascade_PMT_en_1024_best.pth` | Best PMT from retrieval-augmented training; default eval load; recommended `temperature=0.7`, `ntk_alpha=0.4` | Local training |
 
 Suggested order:
 
@@ -375,31 +375,45 @@ Results go to `results/result_summary`; if that directory already exists, `resul
 
 ### Eval a specific PMT checkpoint
 
-The integrated pipeline still loads `parameters/ckpt_0/`; set `CHECKPOINT` (or `--checkpoint`) to choose which PMT weights to evaluate:
+The integrated pipeline still loads `parameters/ckpt_0/`; set `CHECKPOINT` (or `--checkpoint`) to choose which PMT weights to evaluate.
+
+**Example: load `out/run_pmt/cascade_PMT_en_1024_best.pth` (recommended `temperature=0.7`, `ntk_alpha=0.4`)**
 
 ```bash
-# Best weights trained in this repo
+# Single-setting inference / ablation (TRAINING=TRUE, Inference=TRUE)
+CHECKPOINT=out/run_pmt/cascade_PMT_en_1024_best.pth \
+TEMPERATURES=0.7 \
+NTK_ALPHAS=0.4 \
+TRAIN_NTK=TRUE \
+INFER_NTK=TRUE \
+DATA=dataset/RAG_MedQA_US_test_1273.json \
+DATASET_NAME=USMLE \
+  bash scripts/run_ablation_temp_ntk.sh
+```
+
+Equivalent Python entrypoint:
+
+```bash
+python scripts/run_ablation_temp_ntk.py \
+  --checkpoint out/run_pmt/cascade_PMT_en_1024_best.pth \
+  --temperatures 0.7 \
+  --ntk_alphas 0.4 \
+  --train_ntk TRUE \
+  --infer_ntk TRUE \
+  --data_path dataset/RAG_MedQA_US_test_1273.json \
+  --dataset_name USMLE
+```
+
+Other common usages:
+
+```bash
+# Default eval entry (loads out/run_pmt/cascade_PMT_en_1024_best.pth)
 CHECKPOINT=out/run_pmt/cascade_PMT_en_1024_best.pth \
   DATASETS=USMLE bash scripts/run_cascade_infer.sh
 
 # Released init weights (eval without this repo's retrieval-augmented training)
 CHECKPOINT=parameters/sft_PMT_en_1024.pth \
   DATASETS=USMLE bash scripts/run_cascade_infer.sh
-
-# Single JSON + explicit result directory
-CHECKPOINT=out/run_pmt_exp1/cascade_PMT_en_1024_best.pth \
-  DATA=dataset/RAG_MedQA_US_test_1273.json \
-  DATASETS=USMLE \
-  RESULT_DIR=results/result_summary_manual \
-  bash scripts/run_cascade_infer.sh
-```
-
-Equivalent Python entrypoint:
-
-```bash
-python inference_cascade_pmt.py \
-  --datasets USMLE \
-  --checkpoint out/run_pmt/cascade_PMT_en_1024_best.pth
 ```
 
 ## License
