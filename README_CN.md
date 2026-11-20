@@ -16,11 +16,10 @@ GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 | 系统权重 | `parameters/ckpt_0/` | ModelScope 目录直传 |
 | PMT 发布权重 | `parameters/sft_PMT_en_1024.pth` | 归档包 `01`；检索增强训练 / 评测的默认初始化 |
 | 本仓库训练产物 | `out/run_pmt/cascade_PMT_en_1024_best.pth` | 在发布权重上做检索增强训练后得到 |
-| 评测输出 | `results/result_summary` 或 `result_summaryN/` | 目录已存在时自动递增，不覆盖；明细 CSV **不含**中间输入文本列 |
+| **已完成的参考评测 / 消融结果** | **`results/result_summary/`** | **仓库内已跑通并 git 追踪的 USMLE / MedMCQA 结果**（准确率总表与逐条 CSV）；说明见 [results/result_summary/README.md](results/result_summary/README.md) |
+| 新跑评测输出 | `results/result_summaryN/`（N=1,2,…） | 若 `result_summary` 已存在则自动递增目录，**不覆盖**上述参考结果；明细 CSV **不含**中间输入文本列 |
 
-默认评测集：USMLE、MedMCQA。
-
-历史温度 × NTK 消融结果见 `results/result_summary/`（git 追踪）。新消融：
+默认评测集：USMLE、MedMCQA。重新跑温度 × NTK 消融：
 
 ```bash
 bash scripts/run_ablation_temp_ntk.sh
@@ -128,7 +127,7 @@ Phase-modulation-transformer/
 │   ├── ckpt_0/            # 系统权重（ModelScope 目录直传）
 │   └── sft_PMT_en_1024.pth # 已发布的 PMT 权重（包 01）
 ├── out/run_pmt/           # 检索增强训练产出的 PMT 检查点
-├── results/result_summary/ # 参考评测与消融结果
+├── results/result_summary/ # 已完成的参考评测与消融结果（git 追踪）
 ├── requirements.txt
 └── LICENSE
 ```

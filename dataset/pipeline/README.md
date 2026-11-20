@@ -23,7 +23,7 @@ pipeline/
 
 对外可见的样本**仅**来自 `generate_question_with_knowledges.py`（带或不带检索知识）。
 
-**默认实验协议**见根目录 README 对照协议与一键基准：`bash scripts/run_protocol_benchmark.sh`。
+训练 / 评测见根目录 README：`bash scripts/run_cascade_train.sh`、`bash scripts/run_cascade_infer.sh`。参考结果目录：`results/result_summary/`。
 
 ## 配置
 

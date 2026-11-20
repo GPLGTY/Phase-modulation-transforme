@@ -4,9 +4,6 @@ __pycache__/
 .DS_Store
 wandb/
 *.log
-# Deprecated protocol_benchmark: keep README only
-results/protocol_benchmark/*/
-!results/protocol_benchmark/README.md
 results/protocol_eval.csv
 results/medqa_test1273_eval/
 results/medqa_test1273_reeval_*/

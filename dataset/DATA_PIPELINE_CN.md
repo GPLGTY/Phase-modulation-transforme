@@ -125,11 +125,14 @@ python generate_question_with_knowledges.py \
 
 ### 2.4 进入训练与推理
 
-采用根目录三条对照协议（`no_pmt` / `pmt_norag` / `pmt_rag`）。推荐一键基准：
+采用根目录一体检索增强流程（系统权重 `ckpt_0` + PMT）：
 
 ```bash
-bash scripts/run_protocol_benchmark.sh
+bash scripts/run_cascade_train.sh
+bash scripts/run_cascade_infer.sh
 ```
+
+参考评测结果见 `results/result_summary/`。
 
 ---
 
@@ -139,7 +142,7 @@ bash scripts/run_protocol_benchmark.sh
 |------|------|
 | Python / PyTorch | 与仓库根目录 `requirements.txt` 对齐 |
 | Embedding | `stella-base-en-v2` / `stella-base-zh-v2`（路径在 config 中配置） |
-| 级联上游模块 | `parameters/ckpt_a`、`parameters/ckpt_b`、`parameters/ckpt_c`（ModelScope） |
+| 系统权重 | `parameters/ckpt_0/`（ModelScope） |
 
 ## 4. 已纳入内容
 

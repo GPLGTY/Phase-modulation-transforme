@@ -16,7 +16,8 @@ Download and use directly (**no** local pretraining or general instruction SFT r
 | System weights | `parameters/ckpt_0/` | ModelScope directory download |
 | Released PMT | `parameters/sft_PMT_en_1024.pth` | Pack `01`; default train init / optional eval |
 | Trained PMT | `out/run_pmt/cascade_PMT_en_1024_best.pth` | After retrieval-augmented training in this repo |
-| Eval output | `results/result_summary` or `result_summaryN/` | Auto-increments; detail CSVs omit intermediate prompt columns |
+| **Finished reference eval / ablation** | **`results/result_summary/`** | **Completed USMLE / MedMCQA results tracked in git** |
+| New local eval output | `results/result_summaryN/` | Auto-increments so reference `result_summary` is not overwritten |
 
 Default eval sets: USMLE, MedMCQA. Full paths, train save locations, and `CHECKPOINT=…` inference examples: Chinese README **训练与评测** section.
 
