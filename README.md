@@ -3,54 +3,54 @@
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 
-English: [README_EN.md](README_EN.md)
+中文：[README_CN.md](README_CN.md)
 
 GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 
-本仓库发布 **Phase-Modulation Retrieval-Augmented Transformer** 在医学选择题问答上的实现、数据构建与参考评测结果。默认在**检索增强**设定下运行完整流程：加载一体发布的系统权重与已发布的 PMT 检查点，完成选项字母预测并报告准确率。大体量资源托管于 ModelScope（见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)）。
+This repository releases a **Phase-Modulation Retrieval-Augmented Transformer** for medical multiple-choice QA: implementation, data construction, and reference evaluation results. By default the full pipeline runs under a **retrieval-augmented** setting: load the jointly released system weights and the published PMT checkpoint, predict option letters, and report accuracy. Large assets are hosted on ModelScope (see [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)).
 
-使用者直接下载即可使用的权重（**无需**自行预训练或通用指令微调）：
+Weights you can download and use directly (**no** local pretraining or general instruction SFT required):
 
-| 资源 | 路径 | 说明 |
+| Asset | Path | Role |
 |------|------|------|
-| 系统权重 | `parameters/ckpt_0/` | ModelScope 目录直传 |
-| PMT 发布权重 | `parameters/sft_PMT_en_1024.pth` | 归档包 `01`；检索增强训练 / 评测的默认初始化 |
-| 本仓库训练产物 | `out/run_pmt/cascade_PMT_en_1024_best.pth` | 在发布权重上做检索增强训练后得到 |
-| **已完成的参考评测 / 消融结果** | **`results/result_summary/`** | **仓库内已跑通并 git 追踪的 USMLE / MedMCQA 结果**（准确率总表与逐条 CSV）；说明见 [results/result_summary/README.md](results/result_summary/README.md) |
-| 新跑评测输出 | `results/result_summaryN/`（N=1,2,…） | 若 `result_summary` 已存在则自动递增目录，**不覆盖**上述参考结果；明细 CSV **不含**中间输入文本列 |
+| System weights | `parameters/ckpt_0/` | ModelScope directory download |
+| Released PMT | `parameters/sft_PMT_en_1024.pth` | Pack `01`; default init for retrieval-augmented train / eval |
+| Trained PMT (this repo) | `out/run_pmt/cascade_PMT_en_1024_best.pth` | After retrieval-augmented training on the released weights |
+| **Finished reference eval / ablation** | **`results/result_summary/`** | **Completed USMLE / MedMCQA results tracked in git** (accuracy summary + per-sample CSVs); see [results/result_summary/README.md](results/result_summary/README.md) |
+| New local eval output | `results/result_summaryN/` (N=1,2,…) | Auto-increments if `result_summary` already exists so reference results are **not** overwritten; detail CSVs **omit** intermediate input-text columns |
 
-默认评测集：USMLE、MedMCQA。重新跑温度 × NTK 消融：
+Default eval sets: USMLE, MedMCQA. Re-run temperature × NTK ablation:
 
 ```bash
 bash scripts/run_ablation_temp_ntk.sh
-# 输入为包 04 检索增强 JSON；输出写入 result_summary 或 result_summaryN
+# Input: pack-04 retrieval-augmented JSON; output → result_summary or result_summaryN
 ```
 
-## 环境
+## Environment
 
 ```bash
 cd Phase-modulation-transformer
 pip install -r requirements.txt
 ```
 
-请安装与本机 CUDA 匹配的 PyTorch。昇腾需额外安装 `torch_npu`（见 `requirements.txt`）。
+Install a PyTorch build that matches your CUDA. Ascend NPUs also need `torch_npu` (see `requirements.txt`).
 
-| 项目 | 建议 |
-|------|------|
-| GPU | 多卡大显存（完整流程，如 8×80 GB） |
-| 磁盘 | ≥400 GB（含 `ckpt_0` 与归档包） |
-| 内存 | ≥256 GB |
+| Item | Recommendation |
+|------|----------------|
+| GPU | Multi-GPU, large VRAM (full pipeline, e.g. 8×80 GB) |
+| Disk | ≥400 GB (including `ckpt_0` and archive packs) |
+| RAM | ≥256 GB |
 
-## ModelScope 资源获取
+## ModelScope assets
 
-GitHub 仓库以源代码为主；模型权重、语料与 Embedding 统一发布于 ModelScope。
+The GitHub repo is primarily source code; model weights, corpora, and embeddings are published on ModelScope.
 
-**ModelScope 仓库**：[zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering](https://www.modelscope.cn/models/zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
-包含归档包 `01`/`04`/`05` 等，以及一体流程所需目录 `parameters/ckpt_0/`。细节见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)。
+**ModelScope repo**: [zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering](https://www.modelscope.cn/models/zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
+Includes packs `01`/`04`/`05` and the integrated-pipeline directory `parameters/ckpt_0/`. Details: [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md).
 
-### 系统权重（一体流程必需）
+### System weights (required for the integrated pipeline)
 
-默认流程始终加载 `parameters/ckpt_0/`（与 PMT 一体使用）。于**项目根目录**执行：
+The default pipeline always loads `parameters/ckpt_0/` (used together with PMT). From the **project root**:
 
 ```bash
 pip install -U modelscope
@@ -59,136 +59,136 @@ REPO=zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Quest
 python -c "from modelscope import snapshot_download; snapshot_download('$REPO', local_dir='.', allow_patterns=['parameters/ckpt_0/**'])"
 ```
 
-亦可在 ModelScope 页面按目录手动获取到本地 `parameters/ckpt_0/`。路由见 `model/sidecar_map.json`。
+You can also download the directory manually from the ModelScope page into local `parameters/ckpt_0/`. Routing: `model/sidecar_map.json`.
 
-另需已发布的 PMT 权重（归档包 `01` 中的 `parameters/sft_PMT_en_1024.pth`），以及含 `question_with_options`、`answer_idx` 的样本 JSON（可含 `retrieve_info`）。
+You also need the released PMT weights (`parameters/sft_PMT_en_1024.pth` from pack `01`) and sample JSON with `question_with_options` / `answer_idx` (optionally `retrieve_info`).
 
-### 归档包（`.tar`）批量获取
+### Archive packs (`.tar`) batch download
 
-于**项目根目录**执行（脚本下载后解压至 `parameters/`、`dataset/` 等约定路径）：
+From the **project root** (the script downloads and extracts into `parameters/`, `dataset/`, etc.):
 
 ```bash
 pip install -U modelscope
 
-# 已发布的 PMT 权重 + MedQA 检索样本
+# Released PMT weights + MedQA retrieval samples
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
 
-# 检索重建：Embedding + 教材 + FAISS + 原始题目（含 MedMCQA）
+# Rebuild retrieval: Embedding + textbooks + FAISS + raw questions (incl. MedMCQA)
 PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 ```
 
-亦可自 ModelScope 页面下载 `.tar` 后，在**项目根目录**执行 `tar -xf <包名>.tar`。
+Or download `.tar` files from the ModelScope page and run `tar -xf <pack>.tar` at the **project root**.
 
-### 资源清单与本地路径
+### Asset list and local paths
 
-| ModelScope 文件 / 目录 | 本地路径 | 用途 |
+| ModelScope file / dir | Local path | Role |
 |------------------------|----------|------|
-| `parameters/ckpt_0` | `parameters/ckpt_0/` | 系统权重（检索增强一体流程） |
-| `01_parameters.tar` | `parameters/sft_PMT_en_1024.pth` | 已发布的 PMT 权重（训练初始化 / 可直接评测） |
-| `04_medqa_rag_json.tar` | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA / USMLE 检索增强样本 |
-| `05_embedding_stella.tar` | `dataset/pipeline/models/` | 检索用 Stella Embedding（en/zh） |
-| `06_textbooks.tar` | `dataset/pipeline_data/textbooks/` | MedQA 教材（en / zh_paragraph / zh_sentence） |
-| `07_vector_stores.tar` | `dataset/pipeline_data/vector_stores/` | 语言匹配 FAISS 索引（en / zh_paragraph / zh_sentence） |
-| `08_questions.tar` | `dataset/pipeline_data/questions/` | MedQA US/Mainland 与 MedMCQA 原始题目（**尚无现成 MedMCQA RAG JSON 包**） |
+| `parameters/ckpt_0` | `parameters/ckpt_0/` | System weights (retrieval-augmented integrated pipeline) |
+| `01_parameters.tar` | `parameters/sft_PMT_en_1024.pth` | Released PMT weights (train init / optional direct eval) |
+| `04_medqa_rag_json.tar` | `dataset/RAG_MedQA_US_{train,dev,test}_*.json` | MedQA / USMLE retrieval-augmented samples |
+| `05_embedding_stella.tar` | `dataset/pipeline/models/` | Stella Embedding for retrieval (en/zh) |
+| `06_textbooks.tar` | `dataset/pipeline_data/textbooks/` | MedQA textbooks (en / zh_paragraph / zh_sentence) |
+| `07_vector_stores.tar` | `dataset/pipeline_data/vector_stores/` | Language-matched FAISS indexes (en / zh_paragraph / zh_sentence) |
+| `08_questions.tar` | `dataset/pipeline_data/questions/` | MedQA US/Mainland and MedMCQA raw questions (**no ready-made MedMCQA RAG JSON pack**) |
 
-按场景选用：
+By scenario:
 
-| 目标 | 建议 |
+| Goal | Suggestion |
 |------|------|
-| 检索增强训练 / 评测（USMLE） | `ckpt_0` + `PACKS="01 04"` |
-| MedMCQA 评测 | 另按数据节生成 `dataset/RAG_MedMCQA_*.json`，或自备同口径文件 |
-| 自原始题库重建检索 | `PACKS="05 06 07 08"` |
+| Retrieval-augmented train / eval (USMLE) | `ckpt_0` + `PACKS="01 04"` |
+| MedMCQA eval | Also build `dataset/RAG_MedMCQA_*.json` per the data section, or supply equivalent files |
+| Rebuild retrieval from raw questions | `PACKS="05 06 07 08"` |
 
-## 快速开始
+## Quick start
 
 ```bash
-# 训练（默认 MedQA 检索增强训练集）
+# Train (default: MedQA retrieval-augmented train set)
 bash scripts/run_cascade_train.sh
 
-# 评测 USMLE + MedMCQA → results/result_summary 或 result_summaryN
+# Eval USMLE + MedMCQA → results/result_summary or result_summaryN
 bash scripts/run_cascade_infer.sh
 ```
 
-> MedMCQA：ModelScope 目前仅提供原始题目（包 `08`）。请先按下方数据节生成检索增强 JSON，或自备 `dataset/RAG_MedMCQA_dev.json` 等路径后再评测。
+> MedMCQA: ModelScope currently ships raw questions only (pack `08`). Build retrieval-augmented JSON per the data section below, or place files such as `dataset/RAG_MedMCQA_dev.json` before evaluating.
 
-## 仓库结构
+## Repository layout
 
 ```
 Phase-modulation-transformer/
-├── model/                 # 模型与系统权重路由 / 提示配置
-├── trainer/               # 检索增强训练
+├── model/                 # Model + system-weight routing / prompt config
+├── trainer/               # Retrieval-augmented training
 ├── inference_cascade_pmt.py
-├── scripts/               # 训练 / 评测启动、ModelScope 资源脚本
+├── scripts/               # Train / eval launchers, ModelScope asset scripts
 ├── dataset/
-│   ├── pipeline/          # 检索构建流水线与 Embedding
-│   ├── pipeline_data/     # 教材 / FAISS（PACKS 06+07）与运行时检索产物
-│   └── *.json             # 评测 / 训练样本
+│   ├── pipeline/          # Retrieval build pipeline + Embedding
+│   ├── pipeline_data/     # Textbooks / FAISS (PACKS 06+07) + runtime retrieval artifacts
+│   └── *.json             # Eval / train samples
 ├── parameters/
-│   ├── ckpt_0/            # 系统权重（ModelScope 目录直传）
-│   └── sft_PMT_en_1024.pth # 已发布的 PMT 权重（包 01）
-├── out/run_pmt/           # 检索增强训练产出的 PMT 检查点
-├── results/result_summary/ # 已完成的参考评测与消融结果（git 追踪）
+│   ├── ckpt_0/            # System weights (ModelScope directory download)
+│   └── sft_PMT_en_1024.pth # Released PMT weights (pack 01)
+├── out/run_pmt/           # PMT checkpoints from retrieval-augmented training
+├── results/result_summary/ # Finished reference eval + ablation (git-tracked)
 ├── requirements.txt
 └── LICENSE
 ```
 
-## 数据
+## Data
 
-对外训练 / 评测 / 消融输入均为检索流水线产物 JSON（字段含 `question_with_options`、`answer_idx`，检索增强时含 `retrieve_info`）。**不**落盘其它中间样本格式。一体流程在线使用系统权重与 PMT。
+External train / eval / ablation inputs are retrieval-pipeline JSON products (fields include `question_with_options`, `answer_idx`, and `retrieve_info` when retrieval-augmented). **No** other intermediate sample formats are written to disk. The integrated pipeline uses system weights and PMT online.
 
-### 样本清单（对应 `PACKS` 解压后）
+### Sample inventory (after unpacking `PACKS`)
 
-| 用途 | 路径 | 包 |
+| Use | Path | Pack |
 |------|------|-----|
-| MedQA US 训练集 | `dataset/RAG_MedQA_US_train_10178.json`（10178） | `04` |
-| MedQA US 验证集 | `dataset/RAG_MedQA_US_dev_1272.json`（1272） | `04` |
-| MedQA US 测试集 | `dataset/RAG_MedQA_US_test_1273.json`（1273） | `04` |
+| MedQA US train | `dataset/RAG_MedQA_US_train_10178.json` (10178) | `04` |
+| MedQA US dev | `dataset/RAG_MedQA_US_dev_1272.json` (1272) | `04` |
+| MedQA US test | `dataset/RAG_MedQA_US_test_1273.json` (1273) | `04` |
 
-获取方式：`PACKS="04"`，或与检查点一并 `PACKS="01 04"`。亦可自原始语料按下文重建；细节见 [dataset/DATA_PIPELINE_CN.md](dataset/DATA_PIPELINE_CN.md)、[dataset/pipeline/README.md](dataset/pipeline/README.md)。
+Obtain with `PACKS="04"`, or together with checkpoints via `PACKS="01 04"`. You may also rebuild from raw corpora below; details: [dataset/DATA_PIPELINE_CN.md](dataset/DATA_PIPELINE_CN.md), [dataset/pipeline/README.md](dataset/pipeline/README.md).
 
-### MedQA 数据集
+### MedQA dataset
 
-- 推荐（ModelScope）：`PACKS="06 08"` 解压至 `dataset/pipeline_data/textbooks/` 与 `questions/`
-- 原始发布：https://github.com/jind11/MedQA
-- 数据下载：https://drive.google.com/file/d/1ImYUSLk9JbgHXOemfvyiDiirluZHPeQw/view?usp=sharing
-- 中文简介：https://zhuanlan.zhihu.com/p/679590312
+- Recommended (ModelScope): `PACKS="06 08"` → `dataset/pipeline_data/textbooks/` and `questions/`
+- Upstream: https://github.com/jind11/MedQA
+- Download: https://drive.google.com/file/d/1ImYUSLk9JbgHXOemfvyiDiirluZHPeQw/view?usp=sharing
+- Chinese overview: https://zhuanlan.zhihu.com/p/679590312
 
-目录约定：
+Directory layout:
 
 ```
 dataset/pipeline_data/
-├── textbooks/     # en / zh_paragraph / zh_sentence（txt）
-└── questions/     # US|Mainland 下的 train.jsonl / dev.jsonl / test.jsonl
+├── textbooks/     # en / zh_paragraph / zh_sentence (txt)
+└── questions/     # train.jsonl / dev.jsonl / test.jsonl under US|Mainland
 ```
 
-### MedMCQA 数据集
+### MedMCQA dataset
 
-- 推荐（ModelScope）：`PACKS="08"` 含 `questions/MedMCQA/{train,dev,test}.json`
-- 项目主页：https://medmcqa.github.io/
-- 原始发布：https://github.com/medmcqa/medmcqa
-- 数据下载：https://drive.google.com/uc?export=download&id=15VkJdq5eyWIkfb_aoD3oS8i4tScbHYky
-- Hugging Face：https://huggingface.co/datasets/openlifescienceai/medmcqa
-- 论文：https://arxiv.org/abs/2203.14371
-- **尚无 ModelScope 上的现成 MedMCQA 检索增强 JSON 归档包**；需按下述步骤自建，再整理为 `dataset/RAG_MedMCQA_{train,dev}.json` 供评测发现。
+- Recommended (ModelScope): `PACKS="08"` includes `questions/MedMCQA/{train,dev,test}.json`
+- Project: https://medmcqa.github.io/
+- Upstream: https://github.com/medmcqa/medmcqa
+- Download: https://drive.google.com/uc?export=download&id=15VkJdq5eyWIkfb_aoD3oS8i4tScbHYky
+- Hugging Face: https://huggingface.co/datasets/openlifescienceai/medmcqa
+- Paper: https://arxiv.org/abs/2203.14371
+- **No ready-made MedMCQA retrieval-augmented JSON pack on ModelScope**; build as below, then arrange as `dataset/RAG_MedMCQA_{train,dev}.json` for eval discovery.
 
-将 `train.json` / `dev.json` 置于 `dataset/pipeline_data/questions/MedMCQA/`；检索前以 `convert_medmcqa_to_medqa_jsonl.py` 转换为与 MedQA 一致的 jsonl 字段。
+Place `train.json` / `dev.json` under `dataset/pipeline_data/questions/MedMCQA/`; before retrieval, convert to MedQA-aligned jsonl fields with `convert_medmcqa_to_medqa_jsonl.py`.
 
-检索用 Embedding 位于 `dataset/pipeline/models/`（`stella-base-en-v2` / `stella-base-zh-v2` / `stella-large-zh-v2`）。路径由 `dataset/pipeline/config.py` 指定；若迁移存放位置，请同步更新 `model_path`。重建前请先获取：
+Retrieval embeddings live under `dataset/pipeline/models/` (`stella-base-en-v2` / `stella-base-zh-v2` / `stella-large-zh-v2`). Paths are set in `dataset/pipeline/config.py`; if you move them, update `model_path`. Before rebuilding, fetch:
 
 ```bash
 PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 ```
 
-（若已有包 `07` 的 FAISS，可跳过下方步骤 1–2 中对应语言的索引构建。）
+(If you already have pack `07` FAISS indexes, you can skip the matching language index builds in steps 1–2 below.)
 
-### 数据集构建（自原始语料）
+### Dataset construction (from raw corpora)
 
-下列命令均在 `dataset/pipeline/` 下执行。单卡设置 `--device_ids="0"` 且 `--num_process=1`。  
-检索查询键统一为 `--query_key_name="question_with_options"`（题干与选项拼接）；请勿将不同查询键的结果写入同一输出路径以免覆盖。
+Run the following under `dataset/pipeline/`. For a single GPU use `--device_ids="0"` and `--num_process=1`.  
+The retrieval query key is always `--query_key_name="question_with_options"` (stem + options); do not write results from different query keys into the same output path.
 
-产物为 JSON 数组，主要字段：`id`、`question_with_options`、`answer_idx`、`retrieve_info` 等（与包 `04` 口径一致）。
+Outputs are JSON arrays with fields such as `id`, `question_with_options`, `answer_idx`, `retrieve_info` (same schema as pack `04`).
 
-#### 1. 教材文本分块为 JSON
+#### 1. Chunk textbook text into JSON
 
 ```bash
 cd dataset/pipeline
@@ -198,7 +198,7 @@ python -u txt2json.py --input_txt_dir '../pipeline_data/textbooks/zh_sentence' -
 python -u txt2json.py --input_txt_dir '../pipeline_data/textbooks/en' --output_json_dir '../pipeline_data/textbooks/en_json' --max_knowledge_len 1800 --language_type english --min_knowledge_len 5 --do_chunk
 ```
 
-#### 2. 构建向量索引
+#### 2. Build vector indexes
 
 ```bash
 cd dataset/pipeline
@@ -208,18 +208,18 @@ python -u vector_store.py --input_json_dir '../pipeline_data/textbooks/zh_paragr
 python -u vector_store.py --input_json_dir '../pipeline_data/textbooks/en_json' --store_top_path '../pipeline_data/vector_stores/en'
 ```
 
-#### 3. 对 train / dev / test 执行检索增强
+#### 3. Retrieval-augment train / dev / test
 
-查询键统一为 `--query_key_name="question_with_options"`。输出路径：
+Query key: `--query_key_name="question_with_options"`. Output path:
 
 `{output_json_dir}/retrive_use_question_with_options/{embedding_model_name}/{output_json_file}`
 
-单卡：`--device_ids="0"` 且 `--num_process=1`。输入须为 **jsonl**（每行一条样本）。
+Single GPU: `--device_ids="0"` and `--num_process=1`. Inputs must be **jsonl** (one sample per line).
 
 ```bash
 cd dataset/pipeline
 
-# ---------- MedQA 英文 US（默认评测子集；亦可直接使用包 04）----------
+# ---------- MedQA English US (default eval subset; or use pack 04 directly)----------
 python generate_question_with_knowledges.py \
     --num_process=8 --index_key_name="id" --topk_knowledge=10 --knowledge_threshold=0.65 \
     --input_jsonl_path="../pipeline_data/questions/US/train.jsonl" \
@@ -247,7 +247,7 @@ python generate_question_with_knowledges.py \
     --output_json_file="test.json" --device_ids="0,1,2,3,4,5,6,7" \
     --query_key_name="question_with_options"
 
-# ---------- MedQA 中文 Mainland（可选）----------
+# ---------- MedQA Chinese Mainland (optional)----------
 python generate_question_with_knowledges.py \
     --num_process=8 --index_key_name="id" --topk_knowledge=10 --knowledge_threshold=0.65 \
     --input_jsonl_path="../pipeline_data/questions/Mainland/train.jsonl" \
@@ -275,9 +275,9 @@ python generate_question_with_knowledges.py \
     --output_json_file="test.json" --device_ids="0,1,2,3,4,5,6,7" \
     --query_key_name="question_with_options"
 
-# ---------- MedMCQA：格式对齐后检索（训练 / 验证）----------
-# 原始字段为 opa/opb/opc/opd + cop；须先转换为与 MedQA 一致的 jsonl schema
-# 将 train.json / dev.json 置于 ../pipeline_data/questions/MedMCQA/
+# ---------- MedMCQA: align schema then retrieve (train / dev)----------
+# Raw fields: opa/opb/opc/opd + cop; convert to MedQA-aligned jsonl first
+# Place train.json / dev.json under ../pipeline_data/questions/MedMCQA/
 python convert_medmcqa_to_medqa_jsonl.py \
   --in_jsonl ../pipeline_data/questions/MedMCQA/train.json \
   --out_jsonl ../pipeline_data/questions/MedMCQA/train.jsonl
@@ -305,12 +305,12 @@ python generate_question_with_knowledges.py \
     --query_key_name="question_with_options"
 ```
 
-#### 4. 整理到 `dataset/`（供训练 / 评测发现）
+#### 4. Arrange under `dataset/` (for train / eval discovery)
 
-将步骤 3 的输出 JSON 复制或软链到约定文件名，例如：
+Copy or symlink step-3 JSON outputs to the expected filenames, e.g.:
 
 ```bash
-# MedQA US（若未使用包 04）
+# MedQA US (if not using pack 04)
 cp dataset/pipeline_data/questions_with_knowledge/US/train/retrive_use_question_with_options/stella-base-en-v2/train.json \
    dataset/RAG_MedQA_US_train_10178.json
 cp dataset/pipeline_data/questions_with_knowledge/US/dev/retrive_use_question_with_options/stella-base-en-v2/dev.json \
@@ -318,75 +318,75 @@ cp dataset/pipeline_data/questions_with_knowledge/US/dev/retrive_use_question_wi
 cp dataset/pipeline_data/questions_with_knowledge/US/test/retrive_use_question_with_options/stella-base-en-v2/test.json \
    dataset/RAG_MedQA_US_test_1273.json
 
-# MedMCQA（评测默认查找下列路径）
+# MedMCQA (default eval lookup paths)
 cp dataset/pipeline_data/questions_with_knowledge/MedMCQA/dev/retrive_use_question_with_options/stella-base-en-v2/dev.json \
    dataset/RAG_MedMCQA_dev.json
 cp dataset/pipeline_data/questions_with_knowledge/MedMCQA/train/retrive_use_question_with_options/stella-base-en-v2/train.json \
    dataset/RAG_MedMCQA_train.json
 ```
 
-完成后即可进入训练与评测。MedQA 亦可直接使用包 `04`，跳过步骤 1–4 中的 US 部分。
+You can then train and evaluate. For MedQA you may use pack `04` directly and skip the US parts of steps 1–4.
 
-### 检查点路径（ModelScope 解压后）
+### Checkpoint paths (after ModelScope extract)
 
-执行 `PACKS="01"`（或 `PACKS="01 04"`）及 `ckpt_0` 下载后，与训练 / 评测相关的路径如下：
+After `PACKS="01"` (or `PACKS="01 04"`) and downloading `ckpt_0`, train / eval paths are:
 
-| 路径 | 说明 | 来源 |
+| Path | Role | Source |
 |------|------|------|
-| `parameters/ckpt_0/` | 系统权重；推理与训练时一体流程默认加载 | ModelScope 目录直传 |
-| `parameters/sft_PMT_en_1024.pth` | 已发布的 PMT 权重；检索增强训练的默认初始化 | 包 `01` |
-| `out/run_pmt/cascade_PMT_en_1024_best.pth` | 检索增强训练产出的最佳 PMT 检查点；评测默认加载 | 本地训练 |
+| `parameters/ckpt_0/` | System weights; loaded by default in the integrated train/infer pipeline | ModelScope directory download |
+| `parameters/sft_PMT_en_1024.pth` | Released PMT; default init for retrieval-augmented training | Pack `01` |
+| `out/run_pmt/cascade_PMT_en_1024_best.pth` | Best PMT from retrieval-augmented training; default eval load | Local training |
 
-获取顺序建议：
+Suggested order:
 
-1. 下载系统权重 `parameters/ckpt_0/`（见上文 snapshot_download）
-2. `PACKS="01 04" bash scripts/download_modelscope_assets.sh` → 得到 `sft_PMT_en_1024.pth` 与 MedQA 检索 JSON
-3. （可选）`PACKS="05 06 07 08"` 用于重建检索或准备 MedMCQA
+1. Download system weights `parameters/ckpt_0/` (see snapshot_download above)
+2. `PACKS="01 04" bash scripts/download_modelscope_assets.sh` → `sft_PMT_en_1024.pth` + MedQA retrieval JSON
+3. (Optional) `PACKS="05 06 07 08"` to rebuild retrieval or prepare MedMCQA
 
-## 训练与评测
+## Train and eval
 
 ```bash
-# 训练（默认初始化：parameters/sft_PMT_en_1024.pth）
+# Train (default init: parameters/sft_PMT_en_1024.pth)
 DATA=dataset/RAG_MedQA_US_train_10178.json bash scripts/run_cascade_train.sh
 ```
 
-**训练产物默认保存位置**（可用环境变量 `OUT` / `INIT` 覆盖）：
+**Default training output locations** (override with `OUT` / `INIT`):
 
-| 路径 | 说明 |
+| Path | Role |
 |------|------|
-| `out/run_pmt/` | 训练输出目录（默认） |
-| `out/run_pmt/cascade_PMT_en_1024_best.pth` | 验证集最优检查点（评测默认加载） |
-| `out/run_pmt/cascade_PMT_en_1024_epochN.pth` | 各 epoch 快照（若脚本写出） |
+| `out/run_pmt/` | Training output directory (default) |
+| `out/run_pmt/cascade_PMT_en_1024_best.pth` | Best checkpoint on the validation set (default eval load) |
+| `out/run_pmt/cascade_PMT_en_1024_epochN.pth` | Per-epoch snapshots (if written by the script) |
 
 ```bash
-# 自定义输出目录 / 初始化权重
+# Custom output dir / init weights
 INIT=parameters/sft_PMT_en_1024.pth OUT=out/run_pmt_exp1 \
   DATA=dataset/RAG_MedQA_US_train_10178.json bash scripts/run_cascade_train.sh
 ```
 
-### 评测（默认加载训练产物）
+### Eval (loads trained checkpoint by default)
 
 ```bash
-# 默认：加载 out/run_pmt/cascade_PMT_en_1024_best.pth，评测 USMLE + MedMCQA
+# Default: load out/run_pmt/cascade_PMT_en_1024_best.pth; eval USMLE + MedMCQA
 DATASETS=USMLE,MEDMCQA bash scripts/run_cascade_infer.sh
 ```
 
-结果写入 `results/result_summary`；若该目录已存在则自动使用 `result_summary1`、`result_summary2`…（不覆盖）。说明见 [results/README.md](results/README.md) 与 [results/result_summary/README.md](results/result_summary/README.md)。
+Results go to `results/result_summary`; if that directory already exists, `result_summary1`, `result_summary2`, … are used (no overwrite). See [results/README.md](results/README.md) and [results/result_summary/README.md](results/result_summary/README.md).
 
-### 指定某个 PMT 检查点做推理
+### Eval a specific PMT checkpoint
 
-一体流程仍会加载 `parameters/ckpt_0/`；通过 `CHECKPOINT`（或 `--checkpoint`）指定要评测的 PMT 权重：
+The integrated pipeline still loads `parameters/ckpt_0/`; set `CHECKPOINT` (or `--checkpoint`) to choose which PMT weights to evaluate:
 
 ```bash
-# 使用本仓库训练得到的 best 权重
+# Best weights trained in this repo
 CHECKPOINT=out/run_pmt/cascade_PMT_en_1024_best.pth \
   DATASETS=USMLE bash scripts/run_cascade_infer.sh
 
-# 使用发布的初始化权重（未做本仓库检索增强训练时也可评测）
+# Released init weights (eval without this repo's retrieval-augmented training)
 CHECKPOINT=parameters/sft_PMT_en_1024.pth \
   DATASETS=USMLE bash scripts/run_cascade_infer.sh
 
-# 仅评测单个 JSON，并指定结果目录
+# Single JSON + explicit result directory
 CHECKPOINT=out/run_pmt_exp1/cascade_PMT_en_1024_best.pth \
   DATA=dataset/RAG_MedQA_US_test_1273.json \
   DATASETS=USMLE \
@@ -394,7 +394,7 @@ CHECKPOINT=out/run_pmt_exp1/cascade_PMT_en_1024_best.pth \
   bash scripts/run_cascade_infer.sh
 ```
 
-等价 Python 入口：
+Equivalent Python entrypoint:
 
 ```bash
 python inference_cascade_pmt.py \
@@ -402,6 +402,6 @@ python inference_cascade_pmt.py \
   --checkpoint out/run_pmt/cascade_PMT_en_1024_best.pth
 ```
 
-## 许可
+## License
 
-见仓库根目录 `LICENSE`。
+See `LICENSE` at the repository root.
