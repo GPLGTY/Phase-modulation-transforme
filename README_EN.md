@@ -15,7 +15,7 @@ Weights you can download and use directly (**no** local pretraining or general i
 |------|------|------|
 | System weights | `parameters/ckpt_0/` | ModelScope directory download |
 | Released PMT | `parameters/sft_PMT_en_1024.pth` | Pack `01`; default init for retrieval-augmented train / eval |
-| Trained PMT (this repo) | `out/run_pmt/cascade_PMT_en_1024_best.pth` | Best PMT after retrieval-augmented training; recommended inference settings `temperature=0.7`, `ntk_alpha=0.4` |
+| **Best eval checkpoint (recommended)** | `out/run_pmt/cascade_PMT_en_1024_best.pth` | ModelScope pack `09`; best PMT after retrieval-augmented training; recommended `temperature=0.7`, `ntk_alpha=0.4` |
 | **Finished reference eval / ablation** | **`results/result_summary/`** | **Completed USMLE / MedMCQA results tracked in git** (accuracy summary + per-sample CSVs); see [results/result_summary/README.md](results/result_summary/README.md) |
 | New local eval output | `results/result_summaryN/` (N=1,2,…) | Auto-increments if `result_summary` already exists so reference results are **not** overwritten; detail CSVs **omit** intermediate input-text columns |
 
@@ -46,7 +46,7 @@ Install a PyTorch build that matches your CUDA. Ascend NPUs also need `torch_npu
 The GitHub repo is primarily source code; model weights, corpora, and embeddings are published on ModelScope.
 
 **ModelScope repo**: [zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering](https://www.modelscope.cn/models/zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
-Includes packs `01`/`04`/`05` and the integrated-pipeline directory `parameters/ckpt_0/`. Details: [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md).
+Includes packs `01`/`04`/`05`/`09` and the integrated-pipeline directory `parameters/ckpt_0/`. Details: [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md).
 
 ### System weights (required for the integrated pipeline)
 
@@ -61,17 +61,55 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 
 You can also download the directory manually from the ModelScope page into local `parameters/ckpt_0/`. Routing: `model/sidecar_map.json`.
 
-You also need the released PMT weights (`parameters/sft_PMT_en_1024.pth` from pack `01`) and sample JSON with `question_with_options` / `answer_idx` (optionally `retrieve_info`).
+### Best eval checkpoint (recommended, pack `09`)
+
+Best PMT after retrieval-augmented training. Local path is fixed to `out/run_pmt/cascade_PMT_en_1024_best.pth` (same as the default eval `CHECKPOINT`).
+
+```bash
+pip install -U modelscope
+# Extracts to out/run_pmt/cascade_PMT_en_1024_best.pth
+PACKS="09" bash scripts/download_modelscope_assets.sh
+```
+
+**Recommended inference settings**: `temperature=0.7`, `ntk_alpha=0.4` (train-time and infer-time NTK both on: `TRAIN_NTK=TRUE`, `INFER_NTK=TRUE`).
+
+Minimal eval example (requires `parameters/ckpt_0/` and eval JSON):
+
+```bash
+# Recommended: temperature=0.7, ntk_alpha=0.4
+CHECKPOINT=out/run_pmt/cascade_PMT_en_1024_best.pth \
+TEMPERATURES=0.7 \
+NTK_ALPHAS=0.4 \
+TRAIN_NTK=TRUE \
+INFER_NTK=TRUE \
+DATA=dataset/RAG_MedQA_US_test_1273.json \
+DATASET_NAME=USMLE \
+  bash scripts/run_ablation_temp_ntk.sh
+
+# Or default eval entry (CHECKPOINT defaults to the same path; sidecar temperature default 0.7)
+CHECKPOINT=out/run_pmt/cascade_PMT_en_1024_best.pth \
+DATASETS=USMLE \
+  bash scripts/run_cascade_infer.sh
+```
+
+To also fetch init weights / MedQA samples:
+
+```bash
+PACKS="01 04 09" bash scripts/download_modelscope_assets.sh
+```
 
 ### Archive packs (`.tar`) batch download
 
-From the **project root** (the script downloads and extracts into `parameters/`, `dataset/`, etc.):
+From the **project root** (the script downloads and extracts into `parameters/`, `dataset/`, `out/run_pmt/`, etc.):
 
 ```bash
 pip install -U modelscope
 
 # Released PMT weights + MedQA retrieval samples
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
+
+# Best eval checkpoint from this repo
+PACKS="09" bash scripts/download_modelscope_assets.sh
 
 # Rebuild retrieval: Embedding + textbooks + FAISS + raw questions (incl. MedMCQA)
 PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
@@ -90,12 +128,14 @@ Or download `.tar` files from the ModelScope page and run `tar -xf <pack>.tar` a
 | `06_textbooks.tar` | `dataset/pipeline_data/textbooks/` | MedQA textbooks (en / zh_paragraph / zh_sentence) |
 | `07_vector_stores.tar` | `dataset/pipeline_data/vector_stores/` | Language-matched FAISS indexes (en / zh_paragraph / zh_sentence) |
 | `08_questions.tar` | `dataset/pipeline_data/questions/` | MedQA US/Mainland and MedMCQA raw questions (**no ready-made MedMCQA RAG JSON pack**) |
+| `09_cascade_pmt_best.tar` | `out/run_pmt/cascade_PMT_en_1024_best.pth` | **Best eval checkpoint** (recommended `temperature=0.7`, `ntk_alpha=0.4`) |
 
 By scenario:
 
 | Goal | Suggestion |
 |------|------|
-| Retrieval-augmented train / eval (USMLE) | `ckpt_0` + `PACKS="01 04"` |
+| **Reproduce this repo’s best-checkpoint eval** | `ckpt_0` + `PACKS="09"` (+ `04` or your MedMCQA RAG JSON) |
+| Retrieval-augmented train / eval from init (USMLE) | `ckpt_0` + `PACKS="01 04"` |
 | MedMCQA eval | Also build `dataset/RAG_MedMCQA_*.json` per the data section, or supply equivalent files |
 | Rebuild retrieval from raw questions | `PACKS="05 06 07 08"` |
 
@@ -329,19 +369,20 @@ You can then train and evaluate. For MedQA you may use pack `04` directly and sk
 
 ### Checkpoint paths (after ModelScope extract)
 
-After `PACKS="01"` (or `PACKS="01 04"`) and downloading `ckpt_0`, train / eval paths are:
+After downloading `ckpt_0` and the relevant packs, train / eval paths are:
 
 | Path | Role | Source |
 |------|------|------|
 | `parameters/ckpt_0/` | System weights; loaded by default in the integrated train/infer pipeline | ModelScope directory download |
 | `parameters/sft_PMT_en_1024.pth` | Released PMT; default init for retrieval-augmented training | Pack `01` |
-| `out/run_pmt/cascade_PMT_en_1024_best.pth` | Best PMT from retrieval-augmented training; default eval load; recommended `temperature=0.7`, `ntk_alpha=0.4` | Local training |
+| `out/run_pmt/cascade_PMT_en_1024_best.pth` | Best eval PMT; default eval load; recommended `temperature=0.7`, `ntk_alpha=0.4` | Pack `09` (or local training) |
 
 Suggested order:
 
 1. Download system weights `parameters/ckpt_0/` (see snapshot_download above)
-2. `PACKS="01 04" bash scripts/download_modelscope_assets.sh` → `sft_PMT_en_1024.pth` + MedQA retrieval JSON
-3. (Optional) `PACKS="05 06 07 08"` to rebuild retrieval or prepare MedMCQA
+2. To reproduce best-checkpoint eval: `PACKS="04 09" bash scripts/download_modelscope_assets.sh`
+3. To train yourself: `PACKS="01 04" bash scripts/download_modelscope_assets.sh` → `sft_PMT_en_1024.pth` + MedQA retrieval JSON
+4. (Optional) `PACKS="05 06 07 08"` to rebuild retrieval or prepare MedMCQA
 
 ## Train and eval
 

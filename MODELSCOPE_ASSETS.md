@@ -32,8 +32,11 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 ```bash
 pip install -U modelscope
 
-# 常用：Phase-modulation-transformer 初始化权重 + MedQA 检索样本
+# 常用：初始化 PMT + MedQA 检索样本
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
+
+# 本仓库检索增强训练后的最佳 PMT（评测默认权重）
+PACKS="09" bash scripts/download_modelscope_assets.sh
 
 # 检索重建：Embedding + 教材 + FAISS + 原始题目（含 MedMCQA）
 PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
@@ -51,6 +54,7 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 | `06_textbooks.tar` | ~0.5G | `dataset/pipeline_data/textbooks/` | MedQA 教材 |
 | `07_vector_stores.tar` | ~2G | `dataset/pipeline_data/vector_stores/` | FAISS |
 | `08_questions.tar` | ~0.2G | `dataset/pipeline_data/questions/` | MedQA US/Mainland 与 MedMCQA 原始题目 |
+| `09_cascade_pmt_best.tar` | ~760M | `out/run_pmt/cascade_PMT_en_1024_best.pth` | 检索增强训练最佳 PMT（默认评测权重；推荐 `temperature=0.7`、`ntk_alpha=0.4`） |
 | `SHA256SUMS.txt` / `MANIFEST.md` | 小 | — | 校验与清单 |
 
 > 样本 JSON **仅**保留检索脚本产物字段（如 `question_with_options`、`answer_idx`、`retrieve_info`）。自原始题库重建检索需同时具备 `05`–`08`。
@@ -60,6 +64,7 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 | 目标 | 建议 |
 |------|------|
 | 检索增强训练 / 评测（USMLE） | `ckpt_0` + `PACKS="01 04"` |
+| **直接复现本仓库最佳评测权重** | `ckpt_0` + `PACKS="09"`（+ 样本包 `04` 或自备 MedMCQA RAG JSON） |
 | MedMCQA | 包 `08` 仅含**原始题目**；**尚无现成 MedMCQA RAG JSON 归档包**，需本地流水线生成或自备后放入 `dataset/RAG_MedMCQA_*.json` |
 | 自原始题库重建检索流水线 | `PACKS="05 06 07 08"` |
 

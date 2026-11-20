@@ -10,7 +10,7 @@
 # Env:
 #   MODELSCOPE_REPO   default zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering
 #   DOWNLOAD_DIR      default $ROOT/.modelscope_packs
-#   PACKS             space-separated: 01 03b 03d 04 05 06 07 08
+#   PACKS             space-separated: 01 03b 03d 04 05 06 07 08 09
 #   SKIP_EXTRACT=1
 #   FORCE=1
 set -euo pipefail
@@ -34,6 +34,7 @@ declare -A PACK_FILE=(
   [06]="06_textbooks.tar"
   [07]="07_vector_stores.tar"
   [08]="08_questions.tar"
+  [09]="09_cascade_pmt_best.tar"
 )
 
 if ! command -v modelscope >/dev/null 2>&1; then
@@ -87,10 +88,11 @@ fi
 echo
 echo "done. check:"
 echo "  ls -lh parameters/sft_PMT_en_1024.pth"
+echo "  ls -lh out/run_pmt/cascade_PMT_en_1024_best.pth"
 echo "  ls -lh dataset/RAG_MedQA_US_test_1273.json"
 echo "  ls -d dataset/pipeline/models/infgrad/stella-base-en-v2 2>/dev/null || true"
 echo "  ls -d dataset/pipeline_data/textbooks/en_json 2>/dev/null || true"
 echo "  ls -d dataset/pipeline_data/vector_stores/en/stella-base-en-v2 2>/dev/null || true"
 echo "  ls -lh dataset/pipeline_data/questions/US/test.jsonl 2>/dev/null || true"
-echo "benchmark:"
+echo "benchmark (recommended temperature=0.7, ntk_alpha=0.4):"
 echo "  bash scripts/run_cascade_infer.sh"

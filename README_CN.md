@@ -15,7 +15,7 @@ GitHub: https://github.com/ZYXL-QB/Phase-modulation-transformer
 |------|------|------|
 | 系统权重 | `parameters/ckpt_0/` | ModelScope 目录直传 |
 | PMT 发布权重 | `parameters/sft_PMT_en_1024.pth` | 归档包 `01`；检索增强训练 / 评测的默认初始化 |
-| 本仓库训练产物 | `out/run_pmt/cascade_PMT_en_1024_best.pth` | 检索增强训练得到的最佳 PMT；推荐推理设置 `temperature=0.7`、`ntk_alpha=0.4` |
+| **最佳评测权重（推荐）** | `out/run_pmt/cascade_PMT_en_1024_best.pth` | ModelScope 归档包 `09`；检索增强训练后的最佳 PMT；推荐 `temperature=0.7`、`ntk_alpha=0.4` |
 | **已完成的参考评测 / 消融结果** | **`results/result_summary/`** | **仓库内已跑通并 git 追踪的 USMLE / MedMCQA 结果**（准确率总表与逐条 CSV）；说明见 [results/result_summary/README.md](results/result_summary/README.md) |
 | 新跑评测输出 | `results/result_summaryN/`（N=1,2,…） | 若 `result_summary` 已存在则自动递增目录，**不覆盖**上述参考结果；明细 CSV **不含**中间输入文本列 |
 
@@ -46,7 +46,7 @@ pip install -r requirements.txt
 GitHub 仓库以源代码为主；模型权重、语料与 Embedding 统一发布于 ModelScope。
 
 **ModelScope 仓库**：[zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering](https://www.modelscope.cn/models/zyxl2026/Phase-Modulation-Retrieval-Augmented-Transformer-for-Medical-Question-Answering)  
-包含归档包 `01`/`04`/`05` 等，以及一体流程所需目录 `parameters/ckpt_0/`。细节见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)。
+包含归档包 `01`/`04`/`05`/`09` 等，以及一体流程所需目录 `parameters/ckpt_0/`。细节见 [MODELSCOPE_ASSETS.md](MODELSCOPE_ASSETS.md)。
 
 ### 系统权重（一体流程必需）
 
@@ -61,17 +61,55 @@ python -c "from modelscope import snapshot_download; snapshot_download('$REPO', 
 
 亦可在 ModelScope 页面按目录手动获取到本地 `parameters/ckpt_0/`。路由见 `model/sidecar_map.json`。
 
-另需已发布的 PMT 权重（归档包 `01` 中的 `parameters/sft_PMT_en_1024.pth`），以及含 `question_with_options`、`answer_idx` 的样本 JSON（可含 `retrieve_info`）。
+### 最佳评测权重（推荐，包 `09`）
+
+检索增强训练后的最佳 PMT，本地路径固定为 `out/run_pmt/cascade_PMT_en_1024_best.pth`（与评测脚本默认 `CHECKPOINT` 一致）。
+
+```bash
+pip install -U modelscope
+# 解压后得到 out/run_pmt/cascade_PMT_en_1024_best.pth
+PACKS="09" bash scripts/download_modelscope_assets.sh
+```
+
+**推荐推理设置**：`temperature=0.7`，`ntk_alpha=0.4`（训练期 NTK 与推理期 NTK 均开启，即 `TRAIN_NTK=TRUE`、`INFER_NTK=TRUE`）。
+
+最小评测示例（需已有 `parameters/ckpt_0/` 与评测 JSON）：
+
+```bash
+# 推荐设置：temperature=0.7，ntk_alpha=0.4
+CHECKPOINT=out/run_pmt/cascade_PMT_en_1024_best.pth \
+TEMPERATURES=0.7 \
+NTK_ALPHAS=0.4 \
+TRAIN_NTK=TRUE \
+INFER_NTK=TRUE \
+DATA=dataset/RAG_MedQA_US_test_1273.json \
+DATASET_NAME=USMLE \
+  bash scripts/run_ablation_temp_ntk.sh
+
+# 或使用默认评测入口（CHECKPOINT 默认同上路径；sidecar 温度默认 0.7）
+CHECKPOINT=out/run_pmt/cascade_PMT_en_1024_best.pth \
+DATASETS=USMLE \
+  bash scripts/run_cascade_infer.sh
+```
+
+若尚未下载初始化权重 / MedQA 样本，可一并获取：
+
+```bash
+PACKS="01 04 09" bash scripts/download_modelscope_assets.sh
+```
 
 ### 归档包（`.tar`）批量获取
 
-于**项目根目录**执行（脚本下载后解压至 `parameters/`、`dataset/` 等约定路径）：
+于**项目根目录**执行（脚本下载后解压至 `parameters/`、`dataset/`、`out/run_pmt/` 等约定路径）：
 
 ```bash
 pip install -U modelscope
 
 # 已发布的 PMT 权重 + MedQA 检索样本
 PACKS="01 04" bash scripts/download_modelscope_assets.sh
+
+# 本仓库最佳评测权重
+PACKS="09" bash scripts/download_modelscope_assets.sh
 
 # 检索重建：Embedding + 教材 + FAISS + 原始题目（含 MedMCQA）
 PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
@@ -90,12 +128,14 @@ PACKS="05 06 07 08" bash scripts/download_modelscope_assets.sh
 | `06_textbooks.tar` | `dataset/pipeline_data/textbooks/` | MedQA 教材（en / zh_paragraph / zh_sentence） |
 | `07_vector_stores.tar` | `dataset/pipeline_data/vector_stores/` | 语言匹配 FAISS 索引（en / zh_paragraph / zh_sentence） |
 | `08_questions.tar` | `dataset/pipeline_data/questions/` | MedQA US/Mainland 与 MedMCQA 原始题目（**尚无现成 MedMCQA RAG JSON 包**） |
+| `09_cascade_pmt_best.tar` | `out/run_pmt/cascade_PMT_en_1024_best.pth` | **最佳评测权重**（推荐 `temperature=0.7`、`ntk_alpha=0.4`） |
 
 按场景选用：
 
 | 目标 | 建议 |
 |------|------|
-| 检索增强训练 / 评测（USMLE） | `ckpt_0` + `PACKS="01 04"` |
+| **直接复现本仓库最佳权重评测** | `ckpt_0` + `PACKS="09"`（+ `04` 或自备 MedMCQA RAG JSON） |
+| 检索增强训练 / 从初始化权重评测（USMLE） | `ckpt_0` + `PACKS="01 04"` |
 | MedMCQA 评测 | 另按数据节生成 `dataset/RAG_MedMCQA_*.json`，或自备同口径文件 |
 | 自原始题库重建检索 | `PACKS="05 06 07 08"` |
 
@@ -335,13 +375,14 @@ cp dataset/pipeline_data/questions_with_knowledge/MedMCQA/train/retrive_use_ques
 |------|------|------|
 | `parameters/ckpt_0/` | 系统权重；推理与训练时一体流程默认加载 | ModelScope 目录直传 |
 | `parameters/sft_PMT_en_1024.pth` | 已发布的 PMT 权重；检索增强训练的默认初始化 | 包 `01` |
-| `out/run_pmt/cascade_PMT_en_1024_best.pth` | 检索增强训练产出的最佳 PMT；评测默认加载；推荐 `temperature=0.7`、`ntk_alpha=0.4` | 本地训练 |
+| `out/run_pmt/cascade_PMT_en_1024_best.pth` | 最佳评测 PMT；评测默认加载；推荐 `temperature=0.7`、`ntk_alpha=0.4` | 包 `09`（亦可本地训练生成） |
 
 获取顺序建议：
 
 1. 下载系统权重 `parameters/ckpt_0/`（见上文 snapshot_download）
-2. `PACKS="01 04" bash scripts/download_modelscope_assets.sh` → 得到 `sft_PMT_en_1024.pth` 与 MedQA 检索 JSON
-3. （可选）`PACKS="05 06 07 08"` 用于重建检索或准备 MedMCQA
+2. 若只需复现最佳评测：`PACKS="04 09" bash scripts/download_modelscope_assets.sh`
+3. 若需自行训练：`PACKS="01 04" bash scripts/download_modelscope_assets.sh` → `sft_PMT_en_1024.pth` 与 MedQA 检索 JSON
+4. （可选）`PACKS="05 06 07 08"` 用于重建检索或准备 MedMCQA
 
 ## 训练与评测
 
